@@ -1,0 +1,7 @@
+name = "ARMtools"
+uuid = "04fa4220-f7a9-42e2-a909-1083f698c312"
+authors = ["Pablo Saavedra G. <pablosaa@uni-bonn.de>"]
+version = "0.1.0"
+
+[deps]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
