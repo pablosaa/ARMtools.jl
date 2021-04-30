@@ -14,6 +14,54 @@ See LICENSE
 module ARMtools
 
 using NCDatasets
+
+## * Auxiliary functions:
+## 1) Define variables to be read fron netCDF files
+function sortVariables(defvars; onlyvars=[], addvars=[])
+
+    outvars = Dict(:time=>"time")
+    if ~isempty(onlyvars)
+        # finding whether the variables are already as default:
+        idx = map(x->in(x, values(defvars)), onlyvars) |> findall
+        @assert ~isempty(idx) "selected only variables not present in pre-set"
+        # converting only variables to Dict:
+        tmp = map(x->Symbol(uppercase(x))=>x, onlyvars[idx]) |> Dict
+        outvars = merge(outvars, tmp)
+    else
+        outvars = defvars
+    end
+    
+    if ~isempty(addvars)
+        idx = map(x->findfirst(==(x), outvars), addvars) .|> isnothing |> findall
+        tmp = map(x->Symbol(uppercase(x))=>x, addvars[idx]) |> Dict
+        outvars = merge(outvars, tmp)
+    end
+    
+    return outvars
+end
+
+## 2) Read variables from netCDF file:
+function retrieveVariables(ncfile::String, ncvars)
+
+    output = Dict()
+    @assert isfile(ncfile) "reading $ncfile but not found!"
+    ncin = NCDataset(ncfile)
+    for var ∈ ncvars
+        str_var = var[2]
+        println(str_var)
+        tmp_var = ncin[str_var][:,:]
+        if haskey(ncin[str_var].attrib, "missing_value")
+            miss_val = ncin[str_var].attrib["missing_value"]
+            tmp_var[tmp_var .≈ miss_val] .= NaN
+        end
+        # filling the output variable:
+        key_var = var[1]
+        output[key_var] = tmp_var
+    end
+    close(ncin)
+    return output
+end
+
 # * Read INTERPOLATE radiosonde tools:
 """
 Function getSondeData(file_name::String)
@@ -34,8 +82,9 @@ The default data fields are:
 * :θ
 
 """
-function getSondeData(sonde_file::String; addvars=(), onlyvars=() )
+function getSondeData(sonde_file::String; addvars=[], onlyvars=[] )
 
+    # defaul netCDF variables to read from Radiosonde:
     ncvars = Dict(:time=>"time",
                   :height=>"height",
                   :T=>"temp",
@@ -48,76 +97,12 @@ function getSondeData(sonde_file::String; addvars=(), onlyvars=() )
                   :WDIR=>"wdir",
                   :θ=>"potential_temp")
     # for INTERPOLATE RS data:
-    if ~isempty(addvars)
-        # finding whether the variables are already as default:
-        idx = map(x->findfirst(==(x), ncvars), addvars) .|> isnothing |> findall
-        # converting to Dict the added variables:
-        tmp = map(x->Symbol(uppercase(x))=>x, addvars[idx]) |> Dict
-        # merging with default variables:
-        ncvars = merge(ncvars, tmp)
-    end
-    if ~isempty(onlyvars)
-        # converting only variables to Dict:
-        tmp = map(x->Symbol(uppercase(x))=>x, onlyvars[idx]) |> Dict
-        ncvars = merge(Dict(:time=>"time", :height=>"height"), ncvars[3:end])
-    end
+    ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
 
-    output = Dict()
-    isfile(sonde_file) ? "reading $sonde_file" : "file not found!"
-    ncin = NCDataset(sonde_file)
-    for var ∈ ncvars
-        str_var = var[2]
-        println(str_var)
-        tmp_var = ncin[str_var][:,:]
-        if haskey(ncin[str_var].attrib, "missing_value")
-            miss_val = ncin[str_var].attrib["missing_value"]
-            tmp_var[tmp_var .≈ miss_val] .= NaN
-        end
-        # filling the output variable:
-        key_var = var[1]
-        output[key_var] = tmp_var
-    end
-    close(ncin)
+    output = retrieveVariables(sonde_file, ncvars)
+
     return output
-    
-    ##T_C  = copy(ncin["temp"][:,:])
-    ##rh = copy(ncin["rh"][:,:])
-    ##time = ncin["time"][:]
-    ##height= copy(ncin["height"][:]) # km
-    ##wind = copy(ncin["wspd"][:,:])  # m/s
-    ##miss_val = ncin["wspd"].attrib["missing_value"]
-    ##wind[wind .≈ miss_val] .= NaN
-    ##wdir = copy(ncin["wdir"][:,:])  # deg
-    ##miss_val = ncin["wdir"].attrib["missing_value"]
-    ##wdir[wdir .≈ miss_val] .= NaN
-    ##
-    ##uwind = ncin["u_wind"][:,:]; # m/s
-    ##miss_val = ncin["u_wind"].attrib["missing_value"]
-    ##uwind[uwind .≈ miss_val] .= NaN
-    ##
-    ##vwind = ncin["v_wind"][:,:]; # m/s
-    ##miss_val = ncin["v_wind"].attrib["missing_value"]
-    ##vwind[vwind .≈ miss_val] .= NaN
-    ##
-    #### Potential temperature
-    ##θ = ncin["potential_temp"][:,:] # K
-    ##miss_val = ncin["potential_temp"].attrib["missing_value"]
-    ##θ[θ .≈ miss_val] .= NaN
-    ##
-    #### New variables for IVT
-    ##qv = ncin["sh"][:,:];  # gr/gr
-    ##miss_val = ncin["sh"].attrib["missing_value"]
-    ##qv[qv .≈ miss_val] .= NaN
-    ##
-    ##pa = ncin["bar_pres"][:,:];  # kPa
-    ##miss_val = ncin["bar_pres"].attrib["missing_value"]
-    ##pa[pa .≈ miss_val] .= NaN
-    ##
-    ##close(ncin)
-    ##return Dict(:time=>time, :height=>height[:,1], :T=>T_C) #, U=uwind, V=vwind, RH=rh, WS=wind, WD=wdir, QV=qv, Pa=pa, θ = θ)
-
 end
-
 
 end # module
 # Main file containing the package module
