@@ -41,7 +41,7 @@ function sortVariables(defvars; onlyvars=[], addvars=[])
 end
 
 ## 2) Read variables from netCDF file:
-function retrieveVariables(ncfile::String, ncvars)
+function retrieveVariables(ncfile::String, ncvars; attrvars=[])
 
     output = Dict()
     @assert isfile(ncfile) "reading $ncfile but not found!"
@@ -58,10 +58,21 @@ function retrieveVariables(ncfile::String, ncvars)
         key_var = var[1]
         output[key_var] = tmp_var
     end
+    
+    # for global attributes:
+    for var ∈ attrvars
+        str_var = var[2]
+        println(str_var)
+        tmp_var = ncin.attrib[str_var]
+        # filling the output variable:
+        key_var = var[1]
+        output[key_var] = tmp_var
+    end
     close(ncin)
     return output
 end
 
+# ********************************************
 # * Read INTERPOLATE radiosonde tools:
 """
 Function getSondeData(file_name::String)
@@ -77,8 +88,8 @@ The default data fields are:
 * :qv
 * :U
 * :V
-* :WD
-* :WS
+* :WSPD
+* :WDIR
 * :θ
 
 """
@@ -103,6 +114,45 @@ function getSondeData(sonde_file::String; addvars=[], onlyvars=[] )
 
     return output
 end
+
+
+# ***********************************************
+# Reading Ceilomater data
+"""
+Function getCeil10mData(file_name::String)
+
+This will read the ARM datafile 'file_name.nc' and return a Dictionary
+with the defaul data fields.
+The default data fields are:
+* :time
+* :heitht
+* :β
+* :β_raw
+* :CBH
+* :CBD
+"""
+function getCeil10mData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[])
+
+    # defaul netCDF variables to read from Ceilometer:
+    ncvars = Dict(:time=>"time",
+                  :height=>"range",
+                  :β=>"backscatter",
+                  :CBH=>"first_cbh",
+                  :ALT=>"alt",
+                  :TILT=>"tilt_angle")
+
+    attrib = Dict(:location=>"location_description",
+                  :instrumentmodel=>"ceilometer_model",
+                  :doi => "doi")
+    
+    # for CEIL10m data:
+    ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
+
+    output = retrieveVariables(sonde_file, ncvars, attrvars=attrib)
+
+    return output
+end
+
 
 end # module
 # Main file containing the package module
