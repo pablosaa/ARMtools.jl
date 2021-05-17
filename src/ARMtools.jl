@@ -117,7 +117,7 @@ end
 
 
 # ***********************************************
-# Reading Ceilomater data
+# Reading data for Ceilomater type Vaisala 30
 """
 Function getCeil10mData(file_name::String)
 
@@ -152,6 +152,49 @@ function getCeil10mData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[]
 
     return output
 end
+
+# ***********************************************
+# Reading data for HSRL lidar
+"""
+Function getHSRLData(file_name::String)
+
+This will read the ARM datafile 'file_name.nc' and return a Dictionary
+with the defaul data fields.
+The default data fields are:
+* :time
+* :heitht
+* :β
+* :β_raw
+* :δ
+* :snr
+
+Alternative variables can be:
+- beta_a => Particulate extinction cross-section per unit volume
+- atten_beta_r_backscatter => Attenuated molecular return
+- lat => North latitude
+- lon => East longitude
+- alt => altitude above mean sea level
+"""
+function getHSRLData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[])
+
+    # defaul netCDF variables to read from HSRL:
+    ncvars = Dict(:time=>"time",
+                  :height=>"range",
+                  :β_raw=>"beta_a_backscatter",
+                  :SNR=>"beta_a_backscatter_std",
+                  :δ=>"depol")
+
+    attrib = Dict(:location=>"dod_version",
+                  :instrumentmodel=>"facility_id")
+    
+    # for CEIL10m data:
+    ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
+
+    output = retrieveVariables(sonde_file, ncvars, attrvars=attrib)
+
+    return output
+end
+# ---
 
 ## *******************************************************************
 ## Function to estimate β from raw lidar backscattering
