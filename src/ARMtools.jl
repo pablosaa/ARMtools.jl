@@ -13,7 +13,7 @@ See LICENSE
 """
 module ARMtools
 
-using NCDatasets, Statistics
+using NCDatasets, Statistics, Printf
 
 ## * Auxiliary functions:
 ## 1) Define variables to be read fron netCDF files
@@ -39,6 +39,7 @@ function sortVariables(defvars; onlyvars=[], addvars=[])
     
     return outvars
 end
+# ----/
 
 ## 2) Read variables from netCDF file:
 function retrieveVariables(ncfile::String, ncvars; attrvars=[])
@@ -71,6 +72,30 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     close(ncin)
     return output
 end
+# ----/
+
+# ****************************************
+# * get file from pattern:
+"""
+ Function getFilePattern(path::String, product::String, yy, mm ,dd)
+
+ retrieve file name pattern based on year, month, day to get
+ a string to read.
+"""
+function getFilePattern(path::String, product::String, yy, mm ,dd)
+    base_dir = joinpath(path, product, @sprintf("%04d", yy))
+    list_file = readdir(base_dir, join=true)
+    pattern = @sprintf("%04d%02d%02d", yy, mm, dd)
+    ofile = filter(x->all(occursin.(pattern, x)), list_file)
+    ofile = isempty(ofile) ? "$dd.$mm.$yy none" : ofile[1]  
+    return ofile
+end
+# ----/
+
+
+# ********************************************
+# ********************************************
+# READING FUNCTIONS
 
 # ********************************************
 # * Read INTERPOLATE radiosonde tools:
@@ -114,7 +139,7 @@ function getSondeData(sonde_file::String; addvars=[], onlyvars=[] )
 
     return output
 end
-
+# ----/
 
 # ***********************************************
 # Reading data for Ceilomater type Vaisala 30
@@ -152,6 +177,7 @@ function getCeil10mData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[]
 
     return output
 end
+# ----/
 
 # ***********************************************
 # Reading data for HSRL lidar
@@ -194,7 +220,7 @@ function getHSRLData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[])
 
     return output
 end
-# ---
+# ----/
 
 ## *******************************************************************
 ## Function to estimate β from raw lidar backscattering
@@ -223,7 +249,61 @@ function calculate_β_from_raw(lidar::Dict; noise_params = (100, 1e-12, 2e-7, (1
     
     return β
 end
+# ----/
 
+
+# ***************************************************************************
+# Function to read KAZR ARSCRL data
+"""
+Function getKAZRData(file_name::String)
+
+This will read the ARM datafile 'file_name.nc' and return a Dictionary
+with the defaul data fields.
+The default data fields are:
+* :time
+* :heitht
+* :Ze
+* :MDV
+* :SPW
+* :LDR
+* :SNR
+
+Alternative variables can be:
+* beta_a => Particulate extinction cross-section per unit volume
+* atten_beta_r_backscatter => Attenuated molecular return
+* lat => North latitude
+* lon => East longitude
+* alt => altitude above mean sea level
+
+Attributes:
+* radar_operating_frequency_chrip
+* location_description
+* process_version
+"""
+function getKAZRData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[])
+    # defaul netCDF variables to read from KAZR:
+    ncvars = Dict(:time=>"time",
+                  :height=>"height",
+                  :Ze=>"reflectivity",
+                  :MDV=>"mean_doppler_velocity",
+                  :SPW=>"spectral_width",
+                  :LDR=>"linear_depolarization_ratio",
+                  :SNR=>"signal_to_noise_ratio",
+                  :lat=>"lat",
+                  :lon=>"lon",
+                  :alt=>"alt")
+
+    attrib = Dict(:location=>"location_description",
+                  :instrumentmodel=>"process_version")
+    
+    # for CEIL10m data:
+    ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
+
+    output = retrieveVariables(sonde_file, ncvars, attrvars=attrib)
+
+    return output
+end
+# ----/
 end # module
 # Main file containing the package module
 # See LICENSE
