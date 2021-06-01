@@ -8,6 +8,7 @@ other facilities.
 (c) 2020, Pablo Saavedra Garfias
 University of Leipzig
 Faculty of Physics and Geosciences
+LIM
 
 See LICENSE
 """
@@ -22,10 +23,14 @@ function sortVariables(defvars; onlyvars=[], addvars=[])
     outvars = Dict(:time=>"time")
     if ~isempty(onlyvars)
         # finding whether the variables are already as default:
-        idx = map(x->in(x, values(defvars)), onlyvars) |> findall
+        idx = map(x->in(x, onlyvars), values(defvars)) |> findall
         @assert ~isempty(idx) "selected only variables not present in pre-set"
+
         # converting only variables to Dict:
-        tmp = map(x->Symbol(uppercase(x))=>x, onlyvars[idx]) |> Dict
+        thekeys = collect(keys(defvars))
+        thevalues = collect(values(defvars))
+        tmp = map(x->thekeys[x] => thevalues[x], idx) |> Dict
+        #tmp = map(x->Symbol(uppercase(x))=>x, onlyvars[idx]) |> Dict
         outvars = merge(outvars, tmp)
     else
         outvars = defvars
@@ -296,7 +301,7 @@ function getKAZRData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[])
     attrib = Dict(:location=>"location_description",
                   :instrumentmodel=>"process_version")
     
-    # for CEIL10m data:
+    # for KAZR data:
     ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
 
     output = retrieveVariables(sonde_file, ncvars, attrvars=attrib)
@@ -304,6 +309,78 @@ function getKAZRData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[])
     return output
 end
 # ----/
+
+
+# *************************************************
+# Function to read MWR RET products
+"""
+Function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
+
+This function read data from the Microwave Radiometer RET retrievals
+
+The default data fields are:
+* :time
+* :LWP
+* :IWV
+
+Alternative variables can be:
+* lat => North latitude
+* lon => East longitude
+* alt => altitude above mean sea level
+* surface_vapor_pres => 
+* surface_pres => 
+* surface_rh =>
+* tbsky23 => Brightness Temperature at 23GHz [K]
+* tbsky31 => Brightness Temperature at 31GHz [K]
+
+Attributes:
+* side_id
+* doi
+"""
+function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
+
+    ARM_PRODUCT = "RET"
+    ncvars = Dict(:time=>"time",
+                  :lat=>"lat",
+                  :lon=>"lon",
+                  :alt=>"alt")
+
+    if ARM_PRODUCT=="RET"
+        ncvars[:LWP] = "be_lwp";  # [g/m²]
+        ncvars[:IWV] = "be_pwv";  # [cm]
+        
+        factor_lwp = 1f0;
+        factor_iwv = 997f-2;  # [cm] -> [kg m⁻²]
+
+        ncvars[:CBH] = "cloud_base_height"   # [km] AGL
+        ncvars[:CLT] = "cloud_temp"   # [K]
+        ncvars[:SFT] = "surface_temp"   # [K]
+        
+    elseif ARM_PRODUCT=="LOS"
+        ncvars[:LWP] = "liq";  # [cm]
+        ncvars[:IWV] = "vap";  # [cm]
+        factor_lwp = 1f4;
+        factor_iwv = 997f-2;  # [cm] -> [kg m⁻²]
+    else
+    end
+    
+    # for MWR data:
+    ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
+
+    output = retrieveVariables(mwr_file, ncvars, attrvars=attrvars)
+
+    # converting units for LWP and IWV
+    if haskey(output, :LWP)
+        output[:LWP] *= factor_lwp
+    end
+    if haskey(output, :IWV)
+        output[:IWV] *= factor_iwv
+    end
+    
+    return output
+end
+# ----/
+
 end # module
 # Main file containing the package module
 # See LICENSE
