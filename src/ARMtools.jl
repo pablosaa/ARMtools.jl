@@ -68,7 +68,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     # for global attributes:
     for var ∈ attrvars
         str_var = var[2]
-        println(str_var)
+        ##println(str_var)
         tmp_var = ncin.attrib[str_var]
         # filling the output variable:
         key_var = var[1]
