@@ -94,7 +94,7 @@ function readSPECCOPOLc0(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
 end
 function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
 
-    ncvars = Dict(:time=>"time",
+    ncvars = Dict(:time=>"time_offset",
                   :height=>"range",  # [m]
                   :η_hh=>"spectra", #[dbm]
                   :vel_nn=>"velocity_bins",  # [m/s]

@@ -55,11 +55,49 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     for var ∈ ncvars
         str_var = var[2]
         println(str_var)
+        
+
+        # checking for scaling attributes to change the variable values:
+        scale_factor = 1f0
+        if haskey(ncin[str_var].attrib, "scale_factor")
+            scale_factor = ncin[str_var].attrib["scale_factor"]
+        end
+
+        add_offset = 0f0
+        if haskey(ncin[str_var].attrib, "add_offset")
+            add_offset = ncin[str_var].attrib["add_offset"]
+        end
+
+        # checking whether or not the variable is logarithmic:
+        isvarlog = false
+        if haskey(ncin[str_var].attrib, "units")
+            unit_str = ncin[str_var].attrib["units"]
+            isvarlog = map(x->contains(unit_str,x), ("log", "logarithm", "log10")) |> any
+        end
+
+        # getting missing value attribute:
         tmp_var = ncin[str_var][:,:]
+        
         if haskey(ncin[str_var].attrib, "missing_value")
             miss_val = ncin[str_var].attrib["missing_value"]
-            tmp_var[tmp_var .≈ miss_val] .= NaN
+            idx_miss_val = tmp_var .≈ miss_val
+            #tmp_var[tmp_var .≈ miss_val] .= fillvalue(typeof(miss_val)) #NaN
         end
+        
+        # addjusting variable to scaling factor and offset:
+
+        if !contains(str_var, "time")
+            if isvarlog
+                tmp_var = scale_factor*10f0.^(tmp_var/10f0)
+                tmp_var .+= 10f0^(add_offset/10f0)
+                tmp_var = 10f0*log10.(tmp_var)
+            else
+                tmp_var .*= scale_factor
+                tmp_var .+= add_offset
+            end
+            tmp_var[idx_miss_val] .= fillvalue(typeof(miss_val)) #NaN
+        end
+        
         # filling the output variable:
         key_var = var[1]
         output[key_var] = tmp_var
