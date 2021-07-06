@@ -80,8 +80,9 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
         
         if haskey(ncin[str_var].attrib, "missing_value")
             miss_val = ncin[str_var].attrib["missing_value"]
-            idx_miss_val = tmp_var .≈ miss_val
-            #tmp_var[tmp_var .≈ miss_val] .= fillvalue(typeof(miss_val)) #NaN
+            type_var = eltype(tmp_var)
+            tmp_var[tmp_var .≈ miss_val] .= type_var <: AbstractFloat ? NaN : fillvalue(type_var)
+
         end
         
         # addjusting variable to scaling factor and offset:
@@ -95,7 +96,6 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
                 tmp_var .*= scale_factor
                 tmp_var .+= add_offset
             end
-            tmp_var[idx_miss_val] .= fillvalue(typeof(miss_val)) #NaN
         end
         
         # filling the output variable:
