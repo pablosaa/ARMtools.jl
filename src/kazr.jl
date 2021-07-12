@@ -94,17 +94,39 @@ function readSPECCOPOLc0(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
 end
 function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
 
-    ncvars = Dict(:time=>"time_offset",
-                  :height=>"range",  # [m]
-                  :η_hh=>"spectra", #[dbm]
-                  :vel_nn=>"velocity_bins",  # [m/s]
-                  :spect_mask=>"locator_mask")
+    # Checking which spectrum data have the file:
+    if isvariablein(kazr_file, "spectra")
+        ncvars = Dict(:time=>"time_offset",
+                      :height=>"range",  # [m]
+                      :η_hh=>"spectra", #[dbm]
+                      :vel_nn=>"velocity_bins",  # [m/s]
+                      :spect_mask=>"locator_mask")
+    elseif isvariablein(kazr_file, "radar_power_spectrum_of_copolar_h")
+        ncvars = Dict(:time=>"time",
+                      :height=>"range",  # [m]
+                      :η_hh=>"radar_power_spectrum_of_copolar_h", #[dbm]
+                      :vel_nn=>"nyquist_velocity",  # [m/s]
+                      :spect_mask=>"spectrum_index")
+    elseif isvariablein(kazr_file, "radar_power_spectrum_of_copolar_v")
+        @info "sorry... copolar V not yet implemented"
+    else
+        @error "$kazr_file seems not to be an ARM Spectrum data file"
+    end
 
     # variables selection from input:
     ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
 
     output = retrieveVariables(kazr_file, ncvars, attrvars=attvars)
 
+    # converting nyquist_velocity to velocity bins:
+    if values(ncvars) .|> contains("nyquist_velocity") |> any
+        velocity_bins = unique(output[:vel_nn])[1]
+    
+        spectrum_n_samples, n_samples = size(output[:η_hh])
+        velocity_bins = range(-velocity_bins, velocity_bins, length=spectrum_n_samples)
+        output[:vel_nn] = collect(velocity_bins)
+    end
+    
     return output;
 end
 # ----/

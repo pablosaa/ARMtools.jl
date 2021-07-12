@@ -54,9 +54,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     ncin = NCDataset(ncfile)
     for var ∈ ncvars
         str_var = var[2]
-        println(str_var)
         
-
         # checking for scaling attributes to change the variable values:
         scale_factor = 1f0
         if haskey(ncin[str_var].attrib, "scale_factor")
@@ -71,8 +69,9 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
         # checking whether or not the variable is logarithmic:
         isvarlog = false
         if haskey(ncin[str_var].attrib, "units")
-            unit_str = ncin[str_var].attrib["units"]
-            isvarlog = map(x->contains(unit_str,x), ("log", "logarithm", "log10")) |> any
+            unit_str = ncin[str_var].attrib["units"] |> lowercase
+            isvarlog = map(x->contains(unit_str,x),
+                           ("log", "logarithm", "log10", "dbz", "dbm","db")) |> any
         end
 
         # getting missing value attribute:
@@ -84,6 +83,10 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
             tmp_var[tmp_var .≈ miss_val] .= type_var <: AbstractFloat ? NaN : fillvalue(type_var)
 
         end
+
+        # in case the variable has attribute _FillValue instead:
+        type_var = fillvalue(ncin[str_var])
+        tmp_var = NCDatasets.nomissing(tmp_var, eltype(type_var) <: AbstractFloat ? NaN : type_var)
         
         # addjusting variable to scaling factor and offset:
 
@@ -114,6 +117,16 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     end
     close(ncin)
     return output
+end
+# ----/
+
+# ****************************************
+# * request whether or not a varaible is in file
+function isvariablein(fname::String, varname::String)
+    nc = NCDataset(fname, "r")
+    isthere= haskey(nc, varname)
+    close(nc)
+    return isthere
 end
 # ----/
 
