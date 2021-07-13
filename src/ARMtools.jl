@@ -54,14 +54,15 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     ncin = NCDataset(ncfile)
     for var ∈ ncvars
         str_var = var[2]
+        println(str_var)
         
         # checking for scaling attributes to change the variable values:
-        scale_factor = 1f0
+        scale_factor = missing
         if haskey(ncin[str_var].attrib, "scale_factor")
             scale_factor = ncin[str_var].attrib["scale_factor"]
         end
 
-        add_offset = 0f0
+        add_offset = missing
         if haskey(ncin[str_var].attrib, "add_offset")
             add_offset = ncin[str_var].attrib["add_offset"]
         end
@@ -85,21 +86,20 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
         end
 
         # in case the variable has attribute _FillValue instead:
-        type_var = fillvalue(ncin[str_var])
-        tmp_var = NCDatasets.nomissing(tmp_var, eltype(type_var) <: AbstractFloat ? NaN : type_var)
+        if haskey(ncin[str_var].attrib, "_FillValue")
+            type_var = fillvalue(ncin[str_var])
+            tmp_var = NCDatasets.nomissing(tmp_var, eltype(type_var) <: AbstractFloat ? NaN : type_var)
+        end
         
         # addjusting variable to scaling factor and offset:
 
-        if !contains(str_var, "time")
-            if isvarlog
-                tmp_var = scale_factor*10f0.^(tmp_var/10f0)
-                tmp_var .+= 10f0^(add_offset/10f0)
-                tmp_var = 10f0*log10.(tmp_var)
-            else
-                tmp_var .*= scale_factor
-                tmp_var .+= add_offset
-            end
-        end
+        ##if !contains(str_var, "time") & !ismissing(add_offset) & !ismissing(scale_factor)
+        ##    tmp_var = convert_factor_offset(tmp_var,
+        ##                                    scale_factor,
+        ##                                    add_offset,
+        ##                                    isvarlog)
+        ##
+        ##end
         
         # filling the output variable:
         key_var = var[1]
@@ -117,6 +117,36 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     end
     close(ncin)
     return output
+end
+# ----/
+
+# ****************************************
+# HELPER FUNCTIONS
+# ****************************************
+#
+# ****************************************
+# * Calculating netCDF files by factors
+function convert_factor_offset(var::AbstractFloat,
+                               scale_factor::eltype(var),
+                               add_offset::eltype(var),
+                               isvarlog::Bool)
+    if isvarlog
+        var = scale_factor*10f0^(var/10f0)
+        var += 10f0^(add_offset/10f0)
+        var = 10f0*log10(var)
+    else
+        var *= scale_factor
+        var += add_offset
+    end
+
+    return var
+end
+function convert_factor_offset(var::AbstractArray,
+                               scale_factor::eltype(var),
+                               add_offset::eltype(var),
+                               isvarlog::Bool)
+    vararray = convert_factor_offset.(var, scale_factor, add_offset, isvarlog)
+    return vararray
 end
 # ----/
 
