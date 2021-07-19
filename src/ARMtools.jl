@@ -168,10 +168,14 @@ end
  retrieve file name pattern based on year, month, day to get
  a string to read.
 """
-function getFilePattern(path::String, product::String, yy, mm ,dd)
+function getFilePattern(path::String, product::String, yy, mm ,dd; hh)
     base_dir = joinpath(path, product, @sprintf("%04d", yy))
     list_file = readdir(base_dir, join=true)
-    pattern = @sprintf("%04d%02d%02d", yy, mm, dd)
+    if isdefined(hh),
+        pattern = @sprintf("%04d%02d%02d.%02d", yy, mm, dd, hh)
+    else
+        pattern = @sprintf("%04d%02d%02d", yy, mm, dd)
+    end
     ofile = filter(x->all(occursin.(pattern, x)), list_file)
     ofile = isempty(ofile) ? "$dd.$mm.$yy none" : ofile[1]  
     return ofile
