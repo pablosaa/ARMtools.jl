@@ -163,20 +163,27 @@ end
 # ****************************************
 # * get file from pattern:
 """
- Function getFilePattern(path::String, product::String, yy, mm ,dd)
+ Function getFilePattern(path::String, product::String, yy, mm ,dd; hh, submonth=false)
 
  retrieve file name pattern based on year, month, day to get
  a string to read.
 """
-function getFilePattern(path::String, product::String, yy, mm ,dd; hh)
-    base_dir = joinpath(path, product, @sprintf("%04d", yy))
+function getFilePattern(path::String, product::String, yy, mm, dd;
+                        hh=nothing, submonth=false)
+
+    yyyy_mm_dir = submonth ? @sprintf("%04d/%02d", yy, mm) : @sprintf("%04d", yy)
+    base_dir = joinpath(path, product, yyyy_mm_dir)
+        
+    @assert isdir(base_dir) error("$base_dir seems it does not exist!")
+    
     list_file = readdir(base_dir, join=true)
-    if isdefined(hh),
+    if !isnothing(hh)
         pattern = @sprintf("%04d%02d%02d.%02d", yy, mm, dd, hh)
     else
         pattern = @sprintf("%04d%02d%02d", yy, mm, dd)
     end
     ofile = filter(x->all(occursin.(pattern, x)), list_file)
+
     ofile = isempty(ofile) ? "$dd.$mm.$yy none" : ofile[1]  
     return ofile
 end
