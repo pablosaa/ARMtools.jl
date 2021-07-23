@@ -184,8 +184,14 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
     end
     ofile = filter(x->all(occursin.(pattern, x)), list_file)
 
-    ofile = isempty(ofile) ? "$dd.$mm.$yy none" : ofile[1]  
-    return ofile
+    if typeof(ofile)<:Array
+        length(ofile)>1 && @warn "Multiple files match the pattern $pattern, but the first one returned."
+    else
+        @error "No array for the pattern $pattern !"
+    end
+
+    @assert !isempty(ofile) "No files were found with the pattern $pattern !"
+    return  ofile[1]
 end
 # ----/
 
