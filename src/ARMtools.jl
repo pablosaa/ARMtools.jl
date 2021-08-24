@@ -14,7 +14,9 @@ See LICENSE
 """
 module ARMtools
 
-using NCDatasets, Statistics, Printf
+import NCDatasets
+import Statistics
+import Printf
 
 ## * Auxiliary functions:
 ## 1) Define variables to be read fron netCDF files
