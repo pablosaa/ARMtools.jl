@@ -128,29 +128,29 @@ end
 #
 # ****************************************
 # * Calculating netCDF files by factors
-function convert_factor_offset(var_in::AbstractFloat,
-                               scale_factor::eltype(var_in),
-                               add_offset::eltype(var_in),
-                               isvarlog::Bool)
-    var = var_in
-    if isvarlog
-        var = scale_factor*10f0^(var/10f0)
-        var += 10f0^(add_offset/10f0)
-        var = 10f0*log10(var)
-    else
-        var *= scale_factor
-        var += add_offset
-    end
-
-    return var
-end
-function convert_factor_offset(var::AbstractArray,
-                               scale_factor::eltype(var),
-                               add_offset::eltype(var),
-                               isvarlog::Bool)
-    vararray = convert_factor_offset.(var, scale_factor, add_offset, isvarlog)
-    return vararray
-end
+##function convert_factor_offset(var_in::AbstractFloat,
+##                               scale_factor::AbstractFloat,
+##                               add_offset::AbstractFloat,
+##                               isvarlog::Bool)
+##    var = var_in
+##    if isvarlog
+##        var = scale_factor*10f0^(var/10f0)
+##        var += 10f0^(add_offset/10f0)
+##        var = 10f0*log10(var)
+##    else
+##        var *= scale_factor
+##        var += add_offset
+##    end
+##
+##    return var
+##end
+##function convert_factor_offset(var::AbstractArray,
+##                               scale_factor::eltype(var),
+##                               add_offset::eltype(var),
+##                               isvarlog::Bool)
+##    vararray = convert_factor_offset.(var, scale_factor, add_offset, isvarlog)
+##    return vararray
+##end
 # ----/
 
 # ****************************************
