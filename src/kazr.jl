@@ -144,7 +144,7 @@ end
 
 # *************************************************************************************
 #
-using Wavelets
+
 function η_dBz(spec::Dict)
 
     # calculating spectral reflectivity:
@@ -175,8 +175,19 @@ function η_dBz(spec::Dict)
     return η_out
 end
 function η_dBz(filen::String)
-    spec = ARMtools.readSPEC(filen)
-    return η_dBz(spec)
+    spec = ARMtools.readSPECCOPOL(filen)
+    spec[:Zη] = η_dBz(spec)
+    return spec
+end
+# ----/
+
+function ∫zdη(η::AbstractVector; i0=1, i1=length(η))
+    i0 = max(i0, 1)
+    i1 = min(i1, length(η))
+    Z = let Znn = @. 10.0^(0.1η)
+        sum(ζnn[i0:i1])
+    end
+    return 10log10(Z)
 end
 # ----/
 

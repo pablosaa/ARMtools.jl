@@ -19,6 +19,7 @@ module ARMtools
 using NCDatasets
 using Statistics
 using Printf
+using Wavelets
 
 ## * Auxiliary functions:
 ## 1) Define variables to be read fron netCDF files
