@@ -101,6 +101,13 @@ function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
                       :η_hh=>"spectra", #[dbm]
                       :vel_nn=>"velocity_bins",  # [m/s]
                       :spect_mask=>"locator_mask")
+
+        attvars = Dict(:nyquist_vel => "nyquist_velocity",
+                       :cal_constant => "cal_constant",
+                       :Nfft => "fft_len",
+                       :noise => "rx_noise",
+                       :frequency => "radar_operating_frequency",
+        )
     elseif isvariablein(kazr_file, "radar_power_spectrum_of_copolar_h")
         ncvars = Dict(:time=>"time",
                       :height=>"range",  # [m]
@@ -126,8 +133,50 @@ function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
         velocity_bins = range(-velocity_bins, velocity_bins, length=spectrum_n_samples)
         output[:vel_nn] = collect(velocity_bins)
     end
+
+    # converting Attribute variables into numeric values:
+    
     
     return output;
+end
+# ----/
+
+
+# *************************************************************************************
+#
+using Wavelets
+function η_dBz(spec::Dict)
+
+    # calculating spectral reflectivity:
+    (nh, nt) = size(spec[:spect_mask])
+    Pₙ = spec[:noise][1]    # dBm
+    C  = spec[:cal_constant][1]   # dB
+    η_out = similar(spec[:η_hh])
+    
+    for it ∈ (1:nt)
+        for ih ∈ (1:nh)
+            k = spec[:spect_mask][ih, it]
+            if k ≥ 0
+                k += 1
+            else
+                continue
+            end
+            
+            let range_factor = 20log10(1f-3spec[:height][ih]),
+                    Pₛ = spec[:η_hh][:, k]  # dBm
+            
+                    Pₜ = Pₛ .- Pₙ    # dB
+                    Znn = Pₜ .+ range_factor .- C # dB
+                    η_out[:,k] = denoise(Znn, wavelet(WT.sym6, WT.Filter), dnt=VisuShrink(256), TI=true)
+                
+            end
+        end
+    end
+    return η_out
+end
+function η_dBz(filen::String)
+    spec = ARMtools.readSPEC(filen)
+    return η_dBz(spec)
 end
 # ----/
 

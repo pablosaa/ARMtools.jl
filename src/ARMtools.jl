@@ -95,15 +95,6 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
             tmp_var = NCDatasets.nomissing(tmp_var, eltype(type_var) <: AbstractFloat ? NaN : type_var)
         end
         
-        # addjusting variable to scaling factor and offset:
-
-        ##if !contains(str_var, "time") & !ismissing(add_offset) & !ismissing(scale_factor)
-        ##    tmp_var = convert_factor_offset(tmp_var,
-        ##                                    scale_factor,
-        ##                                    add_offset,
-        ##                                    isvarlog)
-        ##
-        ##end
         
         # filling the output variable:
         key_var = var[1]
@@ -111,13 +102,18 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     end
     
     # for global attributes:
-    for var ∈ attrvars
-        str_var = var[2]
-        ##println(str_var)
-        tmp_var = ncin.attrib[str_var]
-        # filling the output variable:
-        key_var = var[1]
-        output[key_var] = tmp_var
+    for (var, str_var) ∈ attrvars
+        println(var)
+        tmp_var = ncin.attrib[str_var] |> split
+
+        local tmp_out = map(tmp_var) do x
+            let tmp_type = any(contains.(x, (".", "-", "+"))) ? Float32 : Int32
+                q = tryparse(tmp_type, x)
+                isnothing(q) ? x : q
+            end
+        end
+          
+        output[var] = length(tmp_out)>1 ? tmp_out : tmp_out[1]
     end
     close(ncin)
     return output
