@@ -202,127 +202,23 @@ end
 # ********************************************
 # READING FUNCTIONS
 
-# ********************************************
-# * Read INTERPOLATE radiosonde tools:
-"""
-Function getSondeData(file_name::String)
+# *******************************************************************
+# Radio Sonde functions:
+include("rawsonde.jl")
 
-This will read the ARM datafile 'file_name.nc' and return a Dictionary
-with the defaul data fields.
-The default data fields are:
-* :time
-* :heitht
-* :T
-* :Pa
-* :RH
-* :qv
-* :U
-* :V
-* :WSPD
-* :WDIR
-* :θ
-
-"""
-function getSondeData(sonde_file::String; addvars=[], onlyvars=[] )
-
-    # defaul netCDF variables to read from Radiosonde:
-    ncvars = Dict(:time=>"time",
-                  :height=>"height",
-                  :T=>"temp",
-                  :Pa=>"bar_pres",
-                  :RH=>"rh",
-                  :qv=>"sh",
-                  :U=>"u_wind",
-                  :V=>"v_wind",
-                  :WSPD=>"wspd",
-                  :WDIR=>"wdir",
-                  :θ=>"potential_temp")
-    # for INTERPOLATE RS data:
-    ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
-
-    output = retrieveVariables(sonde_file, ncvars)
-
-    return output
-end
-# ----/
-
-
+# ******************************************************************
+# LIDARS functions:
 include("lidars.jl")
-
-
-# *************************************************
-# Function to read MWR RET products
-"""
-Function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
-
-This function read data from the Microwave Radiometer RET retrievals
-
-The default data fields are:
-* :time
-* :LWP
-* :IWV
-
-Alternative variables can be:
-* lat => North latitude
-* lon => East longitude
-* alt => altitude above mean sea level
-* surface_vapor_pres => 
-* surface_pres => 
-* surface_rh =>
-* tbsky23 => Brightness Temperature at 23GHz [K]
-* tbsky31 => Brightness Temperature at 31GHz [K]
-
-Attributes:
-* side_id
-* doi
-"""
-function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
-
-    ARM_PRODUCT = "RET"
-    ncvars = Dict(:time=>"time",
-                  :lat=>"lat",
-                  :lon=>"lon",
-                  :alt=>"alt")
-
-    if ARM_PRODUCT=="RET"
-        ncvars[:LWP] = "be_lwp";  # [g/m²]
-        ncvars[:IWV] = "be_pwv";  # [cm]
-        
-        factor_lwp = 1f0;
-        factor_iwv = 997f-2;  # [cm] -> [kg m⁻²]
-
-        ncvars[:CBH] = "cloud_base_height"   # [km] AGL
-        ncvars[:CLT] = "cloud_temp"   # [K]
-        ncvars[:SFT] = "surface_temp"   # [K]
-        
-    elseif ARM_PRODUCT=="LOS"
-        ncvars[:LWP] = "liq";  # [cm]
-        ncvars[:IWV] = "vap";  # [cm]
-        factor_lwp = 1f4;
-        factor_iwv = 997f-2;  # [cm] -> [kg m⁻²]
-    else
-    end
-    
-    # for MWR data:
-    ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
-
-    output = retrieveVariables(mwr_file, ncvars, attrvars=attrvars)
-
-    # converting units for LWP and IWV
-    if haskey(output, :LWP)
-        output[:LWP] *= factor_lwp
-    end
-    if haskey(output, :IWV)
-        output[:IWV] *= factor_iwv
-    end
-    
-    return output
-end
 # ----/
 
 # *******************************************************************
 # KAZR functions:
 include("kazr.jl")
+# ----/
+
+# *******************************************************************
+# MWR functions:
+include("mwr.jl")
 # ----/
 
 end # module

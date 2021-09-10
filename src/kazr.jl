@@ -1,3 +1,4 @@
+# Part of ARMtools.jl
 # sub file including functions and routines for the KAZR cloud radar
 
 # ***************************************************************************
@@ -17,8 +18,8 @@ The default data fields are:
 * :SNR
 
 Alternative variables can be:
-* beta_a => Particulate extinction cross-section per unit volume
-* atten_beta_r_backscatter => Attenuated molecular return
+* 
+* 
 * lat => North latitude
 * lon => East longitude
 * alt => altitude above mean sea level
@@ -166,7 +167,7 @@ function η_dBz(spec::Dict)
                     Pₛ = spec[:η_hh][:, k]  # dBm
             
                     Pₜ = Pₛ .- Pₙ    # dB
-                    Znn = Pₜ .+ range_factor .- C # dB
+                    Znn = @. Pₜ + range_factor - C # dB
                     η_out[:,k] = denoise(Znn, wavelet(WT.sym6, WT.Filter), dnt=VisuShrink(256), TI=true)
                 
             end
@@ -175,6 +176,7 @@ function η_dBz(spec::Dict)
     return η_out
 end
 function η_dBz(filen::String)
+    @assert isfile(filen) "$filen seems not to exist!"
     spec = ARMtools.readSPECCOPOL(filen)
     spec[:Zη] = η_dBz(spec)
     return spec
