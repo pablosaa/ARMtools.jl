@@ -31,7 +31,6 @@ Attributes:
 function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
 
 
-    ARM_PRODUCT = "RET"
     ncvars = Dict(:time=>"time",
                   :lat=>"lat",
                   :lon=>"lon",
@@ -53,6 +52,12 @@ function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
         ncvars[:IWV] = "vap";  # [cm]
         factor_lwp = 1f4;
         factor_iwv = 997f-2;  # [cm] -> [kg m⁻²]
+
+        attvars = Dict(
+            :elevation => "elevation",
+            :azimuth => "azimuth",
+            :wet => "wet_window"
+        )
     else
         @error "None know LWP variables found in $mwr_file"
     end
@@ -68,6 +73,17 @@ function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
     end
     if haskey(output, :IWV)
         output[:IWV] *= factor_iwv
+    end
+
+    # MWR product RET has not info about elevation, azimuth nor wetness:
+    if !haskey(output, :elevation)
+        output[:elevation] = 90f0
+    end
+    if !haskey(output, :azimuth)
+        output[:azimuth] = 0f0
+    end
+    if !haskey(output, :wet)
+        output[:wet] = Int32(0)
     end
     
     return output

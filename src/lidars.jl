@@ -8,6 +8,32 @@
 # * Jenoptik (Lufft)
 ## -----------------------------------------------------------
 
+# ***********************************************
+function getLidarData(lidar_file::String)
+   
+    # Checking which type of LIDAR data is in:
+    if isvariablein(lidar_file, "backscatter")
+        # then CEIL10m
+        str_func = "CEIL10m"
+        ex = getCeil10mData
+        
+    elseif isvariablein(lidar_file, "beta_a_backscatter")
+        # then HSRL
+        str_func = "HSRL"
+        ex = getHSRLData
+    elseif isvariablein(lidar_file, "backscatter_snr")
+        # then MPL
+        str_func = "MPL"
+        ex = getMPLData
+    else
+        @error "$lidar_file seems not an ARM LIDAR data file!"
+    end
+    
+    println("loading $str_func data...")
+    ex = :($ex($lidar_file))
+    return eval(ex)
+end
+# ----/
 
 # ***********************************************
 # Reading data for Ceilomater type Vaisala 30
@@ -73,13 +99,14 @@ function getHSRLData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[])
 
     # defaul netCDF variables to read from HSRL:
     ncvars = Dict(:time=>"time",
-                  :height=>"range",
-                  :β_raw=>"beta_a_backscatter",
-                  :SNR=>"beta_a_backscatter_std",
-                  :δ=>"depol")
+                  :height => "range",
+                  :β_raw => "beta_a_backscatter",
+                  :SNR => "beta_a_backscatter_std",
+                  :δ => "depol")
 
-    attrib = Dict(:location=>"dod_version",
-                  :instrumentmodel=>"facility_id")
+    attrib = Dict(:location => "dod_version",
+                  :instrumentmodel => "facility_id",
+                  :doi => "doi")
     
     # for HSRL data:
     ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
