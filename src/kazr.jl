@@ -71,7 +71,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                             :nyquist_velocity => "nyquist_velocity",
                             :number_spectral_ave => "num_spectral_averages",
                             :prf => "pulse_repetition_frequency",
-                            :drg => ":range_gate_spacing",
+                            :drg => "range_gate_spacing",
                             )
                )
     else
