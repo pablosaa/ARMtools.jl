@@ -36,7 +36,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                   :lon=>"lon",
                   :alt=>"alt")
 
-    attric = Dict()
+    attrib = Dict()
     if isvariablein(input_file, "height")
         # ARSCL file
         merge!(ncvars, Dict(:height=>"height",
