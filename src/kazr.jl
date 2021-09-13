@@ -29,26 +29,58 @@ Attributes:
 * location_description
 * process_version
 """
-function getKAZRData(sonde_file::String; addvars=[], onlyvars=[], attrvars=[])
+function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
     # defaul netCDF variables to read from KAZR:
     ncvars = Dict(:time=>"time",
-                  :height=>"height",
-                  :Ze=>"reflectivity",
-                  :MDV=>"mean_doppler_velocity",
-                  :SPW=>"spectral_width",
-                  :LDR=>"linear_depolarization_ratio",
-                  :SNR=>"signal_to_noise_ratio",
                   :lat=>"lat",
                   :lon=>"lon",
                   :alt=>"alt")
 
-    attrib = Dict(:location=>"location_description",
-                  :instrumentmodel=>"process_version")
+    attric = Dict()
+    if isvariablein(input_file, "height")
+        # ARSCL file
+        merge!(ncvars, Dict(:height=>"height",
+                            :Ze=>"reflectivity",
+                            :MDV=>"mean_doppler_velocity",
+                            :SPW=>"spectral_width",
+                            :LDR=>"linear_depolarization_ratio",
+                            :SNR=>"signal_to_noise_ratio",
+                            )
+               )
+        
+        merge!(attrib, Dict(:location=>"location_description",
+                            :instrumentmodel=>"process_version",
+                            :radar_frequency => "radar_operating_frequency_chirp",
+                            :doi => "doi"
+                            )
+               )
+    elseif isvariablein(input_file, "reflectivity_copol")
+        # for KAZR GE or MD data file:
+        merge!(ncvars, Dict(:height => "range",
+                            :Ze => "reflectivity_copol",
+                            :MDV => "mean_doppler_velocity_copol",
+                            :SPW => "spectral_width_copol",
+                            :Zxpol => "reflectivity_xpol",  # temporal
+                            :SNR => "signal_to_noise_ratio_copol",
+                            )
+               )
+        merge!(attrib, Dict(:location=>"facility_id",
+                            :instrumentmodel=>"process_version",
+                            :radar_frequency => "radar_operating_frequency",
+                            :fft_len => "fft_len",
+                            :nyquist_velocity => "nyquist_velocity",
+                            :number_spectral_ave => "num_spectral_averages",
+                            :prf => "pulse_repetition_frequency",
+                            :drg => ":range_gate_spacing",
+                            )
+               )
+    else
+        @error "Radar data $input_file not supported...!"
+    end
     
-    # for KAZR data:
     ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
 
-    output = retrieveVariables(sonde_file, ncvars, attrvars=attrib)
+    output = retrieveVariables(input_file, ncvars, attrvars=attrib)
 
     return output
 end
