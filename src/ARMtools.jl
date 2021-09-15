@@ -104,7 +104,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     
     # for global attributes:
     for (var, str_var) ∈ attrvars
-        println(var)
+        haskey(ncin.attrib, str_var) ? println(var) : continue
         tmp_var = ncin.attrib[str_var] |> split
 
         local tmp_out = map(tmp_var) do x
