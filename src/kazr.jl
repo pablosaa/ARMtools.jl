@@ -250,13 +250,13 @@ end
 
 # ********************************************************
 # Integrate spectral reflectivity
-function ∫zdη(η::AbstractVector; i0=1, i1=length(η))
-    i0 = max(i0, 1)
-    i1 = min(i1, length(η))
-    Z = let Znn = @. 10.0^(0.1η)
-        sum(ζnn[i0:i1])
+function ∫zdη(η::T; i₀=1, i₁=size(η, 1)) where T<:AbstractArray
+    i₀ = max(i₀, 1)
+    i₁ = min(i₁, length(η))
+    Znn = let ζnnn = @. 10f0^(0.1η)
+        sum( ζnn[i₀:i₁] , dims=1)
     end
-    return 10log10(Z)
+    return 10log10.(Znn)
 end
 # ----/
 
