@@ -188,13 +188,13 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
 
     if typeof(ofile)<:Array
         length(ofile)>1 && @warn "Multiple files match the pattern $pattern, but the first one returned."
-        return  ofile[1]
+        
     else
         @error "No array for the pattern $pattern !"
     end
 
     isempty(ofile) && @warn "No files were found with the pattern $pattern !"
-    return nothing
+    return isempty(ofile) ? nothing :  ofile[1]
 end
 # ----/
 
