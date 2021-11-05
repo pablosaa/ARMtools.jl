@@ -160,8 +160,8 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
     end
     ofile = filter(x->all(occursin.(pattern, x)), list_file)
 
-    if typeof(ofile)<:Array
-        length(ofile)>1 && @warn "Multiple files match the pattern $pattern, but the first one returned."
+    if typeof(ofile)<:Array && length(ofile)>1
+        @warn "Multiple files match the pattern $pattern, but the first one returned."
         return ofile[1]
         
     elseif isempty(ofile)
