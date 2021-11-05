@@ -125,32 +125,6 @@ end
 # HELPER FUNCTIONS
 # ****************************************
 #
-# ****************************************
-# * Calculating netCDF files by factors
-##function convert_factor_offset(var_in::AbstractFloat,
-##                               scale_factor::AbstractFloat,
-##                               add_offset::AbstractFloat,
-##                               isvarlog::Bool)
-##    var = var_in
-##    if isvarlog
-##        var = scale_factor*10f0^(var/10f0)
-##        var += 10f0^(add_offset/10f0)
-##        var = 10f0*log10(var)
-##    else
-##        var *= scale_factor
-##        var += add_offset
-##    end
-##
-##    return var
-##end
-##function convert_factor_offset(var::AbstractArray,
-##                               scale_factor::eltype(var),
-##                               add_offset::eltype(var),
-##                               isvarlog::Bool)
-##    vararray = convert_factor_offset.(var, scale_factor, add_offset, isvarlog)
-##    return vararray
-##end
-# ----/
 
 # ****************************************
 # * request whether or not a varaible is in file
@@ -188,13 +162,15 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
 
     if typeof(ofile)<:Array
         length(ofile)>1 && @warn "Multiple files match the pattern $pattern, but the first one returned."
+        return ofile[1]
         
+    elseif isempty(ofile)
+        @warn "No files were found with the pattern $pattern !"
+        return nothing
     else
-        @error "No array for the pattern $pattern !"
+        return ofile
     end
 
-    isempty(ofile) && @warn "No files were found with the pattern $pattern !"
-    return isempty(ofile) ? nothing :  ofile[1]
 end
 # ----/
 
@@ -225,3 +201,30 @@ include("mwr.jl")
 end # module
 # Main file containing the package module
 # See LICENSE
+
+# ****************************************
+# * Calculating netCDF files by factors
+##function convert_factor_offset(var_in::AbstractFloat,
+##                               scale_factor::AbstractFloat,
+##                               add_offset::AbstractFloat,
+##                               isvarlog::Bool)
+##    var = var_in
+##    if isvarlog
+##        var = scale_factor*10f0^(var/10f0)
+##        var += 10f0^(add_offset/10f0)
+##        var = 10f0*log10(var)
+##    else
+##        var *= scale_factor
+##        var += add_offset
+##    end
+##
+##    return var
+##end
+##function convert_factor_offset(var::AbstractArray,
+##                               scale_factor::eltype(var),
+##                               add_offset::eltype(var),
+##                               isvarlog::Bool)
+##    vararray = convert_factor_offset.(var, scale_factor, add_offset, isvarlog)
+##    return vararray
+##end
+# ----/
