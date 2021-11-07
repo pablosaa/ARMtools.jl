@@ -59,7 +59,6 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     ncin = NCDataset(ncfile)
     for var ∈ ncvars
         str_var = var[2]
-        println(str_var)
         
         # checking for scaling attributes to change the variable values:
         scale_factor = missing
@@ -198,7 +197,14 @@ include("kazr.jl")
 include("mwr.jl")
 # ----/
 
+# *******************************************************************
+# NAV functions:
+include("nav.jl")
+# ----/
+
 end # module
+
+
 # Main file containing the package module
 # See LICENSE
 
