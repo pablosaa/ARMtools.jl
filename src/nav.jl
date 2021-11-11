@@ -5,7 +5,8 @@
 # TODO: optional time steps to read line Minute, 30Seconds, etc.
 # *************************************************
 # Function to read NAV products
-function getNAVData(in_file::String; addvars=[], onlyvars=[], attrvars=[])
+function getNAVData(in_file::String; addvars=[], onlyvars=[], attrvars=[],
+                    time_res=Dates.Minute(1))
     ncvars = Dict(:time => "time",
                   :lat => "lat",
                   :lon => "lon",
@@ -20,8 +21,9 @@ function getNAVData(in_file::String; addvars=[], onlyvars=[], attrvars=[])
 
     output = Dict()
     let dummy = retrieveVariables(in_file, ncvars, attrvars=attrvars)
+        idx_ts = index_at_time_resolution(dummy[:time], δts=time_res)
         foreach(keys(ncvars) |> collect) do kk
-            output[kk] = dummy[kk][1:600:end]
+            output[kk] = dummy[kk][idx_ts]
         end
     end
     

@@ -173,6 +173,31 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
 end
 # ----/
 
+# ********************************************
+# Return the indexes of subset for the time
+# dimension given a desired time resolution
+"""
+Given a vector with elements type ts::Vector{DateTime}, this function
+ returns the indexes that extract the elements of ts that match a given
+ resolution, e.g. for instance the time variable from a netCDF file with 30
+ seconds resolution, to be extracted at 1 minute (default), 30 seconds, or
+ hourly, then use the function as following:
+
+> idx_1min = index_at_time_resolution(ts)
+> idx_30sec = index_at_time_resolution(ts, δts = Dates.Second(30))
+> idx_1hour = index_at_time_resolution(ts, δts = Dates.Hour(1))
+
+then
+> ts[idx_1min]  # minute vector
+> ts[idx_30sec] # 30 seconds vector
+> ts[idx_1hour] # hourly vector
+
+"""
+function index_at_time_resolution(ts::Vector{DateTime}; δts=Minute(1))
+
+    return extrema(ts) |> x-> x[1]:δts:x[2] |> x->findall(>(0), ts .∈ [x])
+end
+# ----/
 
 # ********************************************
 # ********************************************
