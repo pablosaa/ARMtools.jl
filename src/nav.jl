@@ -2,7 +2,6 @@
 # containing functions related to NAV products e.g. RV Polarstern
 # during MOSAiC
 
-# TODO: optional time steps to read line Minute, 30Seconds, etc.
 # *************************************************
 # Function to read NAV products
 function getNAVData(in_file::String; addvars=[], onlyvars=[], attrvars=[],
