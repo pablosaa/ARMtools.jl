@@ -1,9 +1,8 @@
 """
 Julia Package including functions to read and process data from the DOE ARM program.
 
-The package is mainly focused to work with instruments from the NSA facility in Utqiagvik, Alaska.
-Nonetheless since most of the ARM instrumentation is standard, the package can also be used for
-other facilities.
+The package is mainly focused to work with instruments located at the NSA facility in Utqiagvik, Alaska.
+Nonetheless since most of the ARM instrumentation is standard, the package can also be used for other facilities.
 
 (c) 2020, Pablo Saavedra Garfias
 University of Leipzig
@@ -16,11 +15,15 @@ See LICENSE
 
 module ARMtools
 
+# *************************************************************
+# Adding needed packages:
 using NCDatasets
 using Statistics
 using Printf
 using Wavelets
+using Dates
 
+# *************************************************************
 ## * Auxiliary functions:
 ## 1) Define variables to be read fron netCDF files
 function sortVariables(defvars; onlyvars=[], addvars=[])
@@ -193,7 +196,7 @@ then
 > ts[idx_1hour] # hourly vector
 
 """
-function index_at_time_resolution(ts::Vector{DateTime}; δts=Minute(1))
+function index_at_time_resolution(ts::Vector{DateTime}; δts=Dates.Minute(1))
 
     return extrema(ts) |> x-> x[1]:δts:x[2] |> x->findall(>(0), ts .∈ [x])
 end
