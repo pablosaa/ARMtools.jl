@@ -82,9 +82,11 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
                            ("log", "logarithm", "log10", "dbz", "dbm","db")) |> any
         end
 
-        # getting missing value attribute:
+        # *******************************
+        # reading variable:
         tmp_var = ncin[str_var][:,:]
-        
+
+        # getting missing value attribute:
         if haskey(ncin[str_var].attrib, "missing_value")
             miss_val = ncin[str_var].attrib["missing_value"]
             type_var = eltype(tmp_var)
@@ -97,7 +99,15 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
             type_var = fillvalue(ncin[str_var])
             tmp_var = NCDatasets.nomissing(tmp_var, eltype(type_var) <: AbstractFloat ? NaN : type_var)
         end
-        
+        println(str_var)
+        # selecting only data within given limits (if provided in attributes):
+        if haskey(ncin[str_var].attrib, "valid_min") && haskey(ncin[str_var].attrib, "valid_max")
+            Vmin = ncin[str_var].attrib["valid_min"]
+            Vmax = ncin[str_var].attrib["valid_max"]
+            idx_out = findall(Vmin .< tmp_var .> Vmax)
+            
+            !isempty(idx_out) && (tmp_var[idx_out] .= NaN)
+        end
         
         # filling the output variable:
         key_var = var[1]
@@ -230,6 +240,10 @@ include("mwr.jl")
 include("nav.jl")
 # ----/
 
+# *******************************************************************
+# Surface related functions:
+include("surface.jl")
+# ----/
 end # module
 
 
