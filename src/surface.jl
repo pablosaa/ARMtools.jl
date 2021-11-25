@@ -8,7 +8,7 @@
 """
 Function get_SurfEnergyBudget(file_name::String)
 """
-function get_SurfEnergyBudget(input_file::String; addvars=[], onlyvars=[], attrvars=[])
+function read_SurfEnergyBudget(input_file::String; addvars=[], onlyvars=[], attrvars=[])
     # defaul netCDF variables to read from KAZR:
     ncvars = Dict(:time=>"time",
                   :lat=>"lat",

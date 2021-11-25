@@ -99,8 +99,8 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
             type_var = fillvalue(ncin[str_var])
             tmp_var = NCDatasets.nomissing(tmp_var, eltype(type_var) <: AbstractFloat ? NaN : type_var)
         end
-        println(str_var)
-        # selecting only data within given limits (if provided in attributes):
+        
+	# selecting only data within given limits (if provided in attributes):
         if haskey(ncin[str_var].attrib, "valid_min") && haskey(ncin[str_var].attrib, "valid_max")
             Vmin = ncin[str_var].attrib["valid_min"]
             Vmax = ncin[str_var].attrib["valid_max"]
@@ -173,7 +173,7 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
     ofile = filter(x->all(occursin.(pattern, x)), list_file)
 
     if typeof(ofile)<:Array && length(ofile)>1
-        @warn "Multiple files match the pattern $pattern, but the first one returned."
+        @warn "Multiple files match the pattern $(pattern) !!."
         return ofile
         
     elseif isempty(ofile)
