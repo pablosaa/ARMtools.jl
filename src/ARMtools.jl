@@ -207,8 +207,10 @@ then
 
 """
 function index_at_time_resolution(ts::Vector{DateTime}; δts=Dates.Minute(1))
-
-    return extrema(ts) |> x-> x[1]:δts:x[2] |> x->findall(>(0), ts .∈ [x])
+    return let ttx = extrema(ts) |> x-> x[1]:δts:x[2]
+        [argmin(abs.(v.-ts)) for v in ttx]
+    end
+    #return extrema(ts) |> x-> x[1]:δts:x[2] |> x->findall(>(0), ts .∈ [x])
 end
 # ----/
 
