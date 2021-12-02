@@ -37,6 +37,10 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                   :alt=>"alt")
 
     attrib = Dict()
+
+    # checking which data level the input file is:
+    data_level = giveme_datalavel(input_file)
+    
     if isvariablein(input_file, "height")
         # ARSCL file
         merge!(ncvars, Dict(:height=>"height",
@@ -50,7 +54,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
         
         merge!(attrib, Dict(:location=>"location_description",
                             :instrumentmodel=>"process_version",
-                            :radar_frequency => "radar_operating_frequency_chirp",
+                            :radar_frequency => data_level=="c0" ? "radar_operating_frequency_chirp" : "radar_operating_frequency"
                             :doi => "doi"
                             )
                )

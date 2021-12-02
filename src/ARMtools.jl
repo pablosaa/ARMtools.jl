@@ -140,13 +140,27 @@ end
 
 # ****************************************
 # * request whether or not a varaible is in file
-function isvariablein(fname::String, varname::String)
+function isvariablein(fname::String, varname::String; attrib_flag=false)
     nc = NCDataset(fname, "r")
-    isthere= haskey(nc, varname)
+    isthere= attrib_flag ? haskey(nc.attrib, varname) : haskey(nc, varname)
     close(nc)
     return isthere
 end
+
 # ----/
+
+# ******************************************
+# * get data level from file name
+function giveme_datalavel(fname::String)
+    i1 = findfirst('.', fname)
+    fname[i1+3] != '.' && error("$fname seems not to be ARM file?")
+    return fname[i1+1:i1+2]
+end
+function giveme_datalavel(nc::NCDataset)
+    
+    haskey(nc.attrib, "data_level") && error("input dataset seems not to be ARM file?")
+    return nc.attrib["data_level"]
+end
 
 # ****************************************
 # * get file from pattern:
