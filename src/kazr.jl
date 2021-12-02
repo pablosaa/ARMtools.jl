@@ -54,7 +54,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
         
         merge!(attrib, Dict(:location=>"location_description",
                             :instrumentmodel=>"process_version",
-                            :radar_frequency => data_level=="c0" ? "radar_operating_frequency_chirp" : "radar_operating_frequency"
+                            :radar_frequency => data_level=="c0" ? "radar_operating_frequency_chirp", : "radar_operating_frequency",
                             :doi => "doi"
                             )
                )
