@@ -165,13 +165,24 @@ end
 # ****************************************
 # * get file from pattern:
 """
- Function getFilePattern(path::String, product::String, yy, mm ,dd; hh, submonth=false)
+Function to obtain list of files/single file which compraises with given criterium.
 
- retrieve file name pattern based on year, month, day to get
- a string to read.
+USAGE:
+> files = getFilePattern(path::String, product::String, yy, mm ,dd; hh, submonth=false, fileext=".nc")
+
+WHERE:
+* path::String the path where to look files
+* product::String Product name, then the files are scanned at "path/product"
+* yy, mm, dd are the year, month and day, then the scanning is at "path/product/yy/*yymmdd*"
+* hh (optional) is the hour, if specified the scanning follows "path/product/yy/*yymmdd.hh*"
+* submonth (optional) is a flag to create sub-folder with month "path/product/yy/mm/*yymmdd*"
+* fileext (optional) searchs for files with the extendion "path/product/yy/mm/*yymmdd*.fileext"
+
+If it matchs multiple files the output will be a Vector{String} otherwise a String or nothing
+
 """
 function getFilePattern(path::String, product::String, yy, mm, dd;
-                        hh=nothing, submonth=false)
+                        hh=nothing, submonth=false, fileext::String="")
 
     yyyy_mm_dir = submonth ? @sprintf("%04d/%02d", yy, mm) : @sprintf("%04d", yy)
     base_dir = joinpath(path, product, yyyy_mm_dir)
@@ -185,6 +196,9 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
         pattern = @sprintf("%04d%02d%02d", yy, mm, dd)
     end
     ofile = filter(x->all(occursin.(pattern, x)), list_file)
+    ofile = let tmp = occursin.(pattern, list_file) |> x->list_file[x]
+        isempty(fileext) ? tmp : occursin.(fileext, tmp) |> x->tmp[x]
+    end
 
     if typeof(ofile)<:Array && length(ofile)>1
         @warn "Multiple files match the pattern $(pattern) !!."
