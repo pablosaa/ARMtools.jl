@@ -193,7 +193,7 @@ function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
     
         spectrum_n_samples, n_samples = size(output[:η_hh])
         # velocity_bins = range(-velocity_bins, velocity_bins, length=spectrum_n_samples)
-        output[:vel_nn] = DopplerVelocityVector(Velocity_bins, spectrum_n_samples)  #collect(velocity_bins)
+        output[:vel_nn] = DopplerVelocityVector(velocity_bins, spectrum_n_samples)  #collect(velocity_bins)
     end
 
     # converting Attribute variables into numeric values:
