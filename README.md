@@ -1,4 +1,5 @@
 # ARMtools.jl
+[![GPLv2 License](https://img.shields.io/github/license/pablosaa/ARMtools.jl?style=plastic)](https://github.com/pablosaa/ARMtools.jl/blob/main/LICENSE)
 ## Julia package to read and process data from the ARM Facility.
 
 This repository contains the ``ARMtools.jl`` Julia packate with a suit of modules to process data from the USA Department Of Energy's ![Atmospheric Radiation Measurement](https://www.arm.gov) (ARM) facility.
