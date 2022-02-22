@@ -90,6 +90,30 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
 end
 # ----/
 
+# *************************************************************************************
+# Function to estimate the Doppler velocity vector from given Nyquist velocty
+# and number of spectral bins.
+#
+"""
+Return the Doppler Velocity given the Nyquist velocity and the number of spectral bins
+Vnn = DopplerVelocityVector(Vn, Nspc)
+
+Vnn is a vector of length Nspc and the zero velocity is located at index: Nspc/2 +1
+
+"""
+function DopplerVelocityVector(Vn::Real, Nspc::Int)
+    # index for the location of zero Doppler velocity:
+    N₀ = Nspc/2
+    
+    # velocity resolution of Doppler spectrum:
+    Δv = Vn/N₀
+
+    # returning vector of Doppler velocity:
+    return range(-Vn, stop=Vn-Δv, length=Nspc) |> collect
+end
+# ----/
+
+
 # ***************************************************************************
 # Function to read KAZR SPECCOPOL data
 """
@@ -168,8 +192,8 @@ function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
         velocity_bins = unique(output[:vel_nn])[1]
     
         spectrum_n_samples, n_samples = size(output[:η_hh])
-        velocity_bins = range(-velocity_bins, velocity_bins, length=spectrum_n_samples)
-        output[:vel_nn] = collect(velocity_bins)
+        # velocity_bins = range(-velocity_bins, velocity_bins, length=spectrum_n_samples)
+        output[:vel_nn] = DopplerVelocityVector(Velocity_bins, spectrum_n_samples)  #collect(velocity_bins)
     end
 
     # converting Attribute variables into numeric values:
@@ -178,6 +202,7 @@ function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
     return output;
 end
 # ----/
+
 
 
 # *************************************************************************************
