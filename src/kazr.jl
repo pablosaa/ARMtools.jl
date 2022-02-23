@@ -78,6 +78,26 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                             :drg => "range_gate_spacing",
                             )
                )
+    elseif isinstrument(input_file, "MWACR")
+        # for MWACR type radar:
+        merge!(ncvars, Dict(:height => "range",
+                            :Ze => "reflectivity",
+                            :MDV => "mean_doppler_velocity",
+                            :SPW => "spectral_width",
+                            :Zvpol => "reflectivity_crosspolar_v",  # temporal
+                            :SNR => "signal_to_noise_ratio_copolar_h",
+                            )
+               )
+        merge!(attrib, Dict(:location=>"facility_id",
+                            :instrumentmodel=>"instrument_name",
+                            :radar_frequency => "radar_operating_frequency",
+                            :fft_len => "fft_len",
+                            :nyquist_velocity => "nyquist_velocity",
+                            #:number_spectral_ave => "post_avg_len",
+                            #:prf => "pulse_repetition_frequency",
+                            #:drg => "range_gate_spacing",
+                            )
+               )
     else
         @error "Radar data $input_file not supported...!"
     end

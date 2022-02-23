@@ -117,14 +117,18 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     # for global attributes:
     for (var, str_var) ∈ attrvars
         haskey(ncin.attrib, str_var) ? println(var) : continue
-        tmp_var = ncin.attrib[str_var] |> split
+        local tmp_out = ncin.attrib[str_var] #|> split
 
-        local tmp_out = map(tmp_var) do x
-            let tmp_type = any(contains.(x, (".", "-", "+"))) ? Float32 : Int32
-                q = tryparse(tmp_type, x)
-                isnothing(q) ? x : q
+        
+        if typeof(tmp_out) <: String
+            tmp_out = map(split(tmp_out)) do x
+                let tmp_type = any(contains.(x, (".", "-", "+"))) ? Float32 : Int32
+                    q = tryparse(tmp_type, x)
+                    isnothing(q) ? x : q
+                end
             end
         end
+            
           
         output[var] = length(tmp_out)>1 ? tmp_out : tmp_out[1]
     end
@@ -137,6 +141,20 @@ end
 # HELPER FUNCTIONS
 # ****************************************
 #
+
+# ****************************************
+# inquires instrument/product name by asking
+# attribute datastream
+"""
+"""
+function isinstrument(fname::String, name::String; prod_id=false)
+    datastream = NCDataset(fname, "r") do ds
+        haskey(ds.attrib, "datastream") ? ds.attrib["datastream"] : fname
+    end
+       
+    return contains(datastream, lowercase(name))
+end
+# ----/
 
 # ****************************************
 # * request whether or not a varaible is in file
