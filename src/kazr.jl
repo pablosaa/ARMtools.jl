@@ -231,83 +231,103 @@ end
 # Journal of Applied Meteorology, Vol 13.
 #
 function Extract_Spectra_NL(Zη::Matrix; p::Int=1)
-	#p = Zη[:Nspec_ave][1]
+    #p = Zη[:Nspec_ave][1]
 	
-	# Defining output variables:
-	Zη_cor = similar(Zη)
-	SNR_dB = similar(Zη)
+    # Defining output variables:
+    Zη_cor = similar(Zη)
+    SNR_dB = similar(Zη)
 	
-	Nspec, Nsamples = size(Zη)
-	for idx ∈ 1:Nsamples
-		# spectral reflectivity in linear units:
-		S = 10f0.^(0.1Zη[:, idx])
+    Nspec, Nsamples = size(Zη)
+    for idx ∈ 1:Nsamples
+	# spectral reflectivity in linear units:
+	S = 10f0.^(0.1Zη[:, idx]) .|> Float32
 		
-		# sorting S from smallest to largest:
-		Iₙ = sortperm(S)
-		Sₙ = S[Iₙ]
+	# sorting S from smallest to largest:
+	Iₙ = sortperm(S)
+	Sₙ = S[Iₙ]
 		
-		ΣSₙ = cumsum(Sₙ, dims=1)
-		N = cumsum(isfinite.(Sₙ), dims=1)
-		fₙ = Iₙ./Nspec
+	ΣSₙ = cumsum(Sₙ, dims=1)
+	N = cumsum(isfinite.(Sₙ), dims=1)
+	fₙ = Iₙ./Nspec
 		
-		# eq. (4) :
-		σ² = cumsum(Sₙ.*fₙ.^2, dims=1)./ΣSₙ .- (cumsum(Sₙ.*fₙ,dims=1)./ΣSₙ).^2
+	# eq. (4) :
+	σ² = cumsum(Sₙ.*fₙ.^2, dims=1)./ΣSₙ .- (cumsum(Sₙ.*fₙ,dims=1)./ΣSₙ).^2
 		
-		# eq. (5)
-		σₙ² = 1/12 #(F.^2)/12
+	# eq. (5)
+	σₙ² = 1/12 #(F.^2)/12
 		
-		# eq. (6) :
-		P = ΣSₙ./N
+	# eq. (6) :
+	P = ΣSₙ./N
 		
-		# eq. (7) :
-		Q = cumsum(Sₙ.^2, dims=1)./N .- P.^2
+	# eq. (7) :
+	Q = cumsum(Sₙ.^2, dims=1)./N .- P.^2
 		
-		# eq. (8) :
-		R₁ = σₙ²./σ²
+	# eq. (8) :
+	R₁ = σₙ²./σ²
 		
-		# eq. (9) :
-		R₂ = (P.^2)./(Q*p)
+	# eq. (9) :
+	R₂ = (P.^2)./(Q*p)
 		
-		# Applying criteria to determine Noise Levels
-		# * For R₂ :
-		Inoise2, Pnoise2 = findfirst(R₂ .≤ 1) |> x->!isnothing(x) ? (x, P[x]) : (10, Sₙ[10])
-		
-		Qnoise2 = Q[Inoise2]
+	# Applying criteria to determine Noise Levels
+	# * For R₂ :
+	Inoise2, Pnoise2 = findfirst(R₂ .≤ 1) |> x->!isnothing(x) ? (x, P[x]) : (5, Sₙ[5])
+	
+	Qnoise2 = Q[Inoise2] |> abs
 				
-		# For R₁ :
-		Inoise1, Pnoise1 = findlast(0 .≤ diff(R₁) .< .01) |> x->!isnothing(x) ? (x, P[x]) : (10,Sₙ[10])
-		Qnoise1 = Q[Inoise1]
+	# For R₁ :
+	Inoise1, Pnoise1 = findlast(0 .≤ diff(R₁) .< .01) |> x->!isnothing(x) ? (x, P[x]) : (5, Sₙ[5])
+	Qnoise1 = Q[Inoise1]
 				
-		# Correcting spectral reflectivity from noise level:
-		Zη_cor[:, idx], SNR_dB[:, idx] = let tmp = (S .- Pnoise2)
-			tmp[tmp.≤0] .= NaN
-			ii = tmp .≤ Pnoise2 + sqrt(Qnoise2)
-			NoiseMean = mean(tmp[ii])	
-			NoisePeak = maximum(tmp[ii])
-			NoiseStdv = std(tmp[ii])
-			tmp[(tmp .≤ NoisePeak) .| isnan.(tmp)] .= Pnoise2
+	# Correcting spectral reflectivity from noise level:
+	Zη_cor[:, idx], SNR_dB[:, idx] = let tmp = (S .- Pnoise2)
+	    tmp[tmp.≤0] .= NaN
+	    ii = tmp .≤ (Pnoise2 + sqrt(Qnoise2))
+	    NoiseMean = mean(tmp[ii])	
+	    NoisePeak = maximum(tmp[ii])
+	    NoiseStdv = std(tmp[ii])
+	    tmp[(tmp .≤ NoisePeak) .| isnan.(tmp)] .= Pnoise2
 			
-			# Signal-to-noise-ratio:
-			SNR = tmp./Pnoise2
+	    # Signal-to-noise-ratio:
+	    SNR = tmp./Pnoise2
 			
-			10log10.(tmp), 10log10.(SNR)
-		end
+	    10log10.(tmp), 10log10.(SNR)
 	end
-	return Zη_cor, SNR_dB
+    end
+    return Zη_cor, SNR_dB
 end
 # ----/
 
+# ********************************************************
+# SPECTRUM HELPER FUNCTIONS:
 # ********************************************************
 # Integrate spectral reflectivity
 function ∫zdη(η::T; i₀=1, i₁=size(η, 1)) where T<:AbstractArray
     i₀ = max(i₀, 1)
     i₁ = min(i₁, length(η))
-    Znn = let ζnnn = @. 10f0^(0.1η)
+    Znn = let ζnn = @. 10f0^(0.1η)
         sum( ζnn[i₀:i₁] , dims=1)
     end
-    return 10log10.(Znn)
+    return 10f0log10.(Znn)
 end
 # ----/
+
+# ********************************************************
+# extract 2D Spectrogram given a time index:
+function extract2DSpectrogram(spec::Dict, idx::Int; var::Symbol=:η_hh, fill_val=NaN)
+    # obtaining number of samples and altitudes:
+    Nspc = length(spec[:vel_nn])
+    Nrng = length(spec[:height])
+    # extracting indexes for spectogram height vs doppler velocity:
+    idx_alt = spec[:spect_mask][:, idx] .≥ 0
+    idx_rng = spec[:spect_mask][idx_alt, idx] .+ 1
+    # creating output 2D variable:
+    out2D = fill(fill_val, Nrng, Nspc)
+    out2D[idx_alt, :] = spec[var][:, idx_rng]'
+
+    rng_lim = findall(!isnan, out2D[:,1]) |> extrema |> x-> spec[:height][[x...]] .|> floor
+	
+    return out2D, rng_lim
+end
 
 # end of script.
 # *****************************************************************
