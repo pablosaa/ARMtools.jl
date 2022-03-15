@@ -137,15 +137,17 @@ end
 # ***************************************************************************
 # Function to read KAZR SPECCOPOL data
 """
-Function readSPECCOPOL(kazr_file::String)
-Function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attrvars=[])
+Function readSPECCOPOL(radar_file::String)
+Function readSPECCOPOL(radar_file::String; addvars=[], onlyvars=[], attrvars=[])
+Function readSPECCOPOL(radar_file::Vector{String}; addvars=[], onlyvars=[], attrvars=[])
 
 Routines to process KAZR copol Doppler spectrum.
 The default data fields are:
-* :time
-* :height    | [m]
-* :η_hh  | [dbm]
-* :nyquist_vel | [m/s]
+* :time   | Vector{DateTime}
+* :height | Vector{Float} [m]
+* :η_hh   | Matrix{Float} [dBm]
+* :nyquist_vel | Float [m/s]
+* :vel_nn | Vector{Float} [m/s]
 
 Alternative variables can be:
 * lat => North latitude
@@ -155,6 +157,10 @@ Alternative variables can be:
 Attributes:
 * side_id
 * doi
+
+Note: in case radar_file is a Vector{String}, the user needs to ensure that the
+file names are sorted in such a way the time dimension monotonically increases,
+otherwise the time dimension will be mixed up.
 
 """
 function readSPECCOPOLc0(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
@@ -173,6 +179,26 @@ function readSPECCOPOLc0(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
 
     return output
 end
+function readSPECCOPOL(kazr_file::Vector{String}; addvars=[], onlyvars=[], attvars=[])
+    # for a list of files:
+    spec_out = Dict{Symbol, Any}()
+    catvar = Dict(:time=>1, :η_hh=>2, :spect_mask=>2)
+
+    foreach(kazr_file) do fn
+        spec = readSPECCOPOL(fn, addvars=addvars, onlyvars=onlyvars, attvars=attvars)
+
+        if isempty(spec_out) #fn==kazr_file[1]
+            spec_out = spec
+        else
+            spec[:spect_mask][spec[:spect_mask] .≥ 0] .+= size(spec_out[:η_hh], 2)
+            foreach(catvar) do (k,v)
+                spec_out[k] = cat(spec_out[k], spec[k]; dims=v)
+            end
+        end
+    end
+    return spec_out
+end
+
 function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
 
     # Checking which spectrum data have the file:

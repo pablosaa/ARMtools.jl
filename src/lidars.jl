@@ -167,11 +167,19 @@ end
 ## ******************************************
 #  PROCESSING FUNCTIONS
 ## ******************************************
-function raw_to_β(β_in::Matrix, snr::Matrix, range::Vector; snr_limit = 5)
+function raw_to_β(β_in::Matrix, snr::Matrix, range::Vector; snr_limit = 5, δc::Matrix=Matrix{AbstractFloat}(undef, 0, 0))
     range_square = range.^2
     range_square[1] = range[1] ≈ 0 ? range[1] : range_square[1]
     β_new = β_in./range_square
-    β_new[snr .< snr_limit] .= NaN
+    idx_snr = snr .< snr_limit
+    β_new[idx_snr] .= NaN
+
+    if !isempty(δc)
+        δₗ = circular_to_linear_depol(δc)
+        δₗ[idx_snr] .= NaN
+        return β_new, δₗ
+    end
+    
     return β_new
 end
 # ----/
