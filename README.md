@@ -11,6 +11,8 @@ This package is part of the ![(AC)³](https://www.ac3-tr.de) project, sub-cluste
 --<br>
 (c) 2020, Pablo Saavedra Garfias<br>
 [contact: pablo.saavedra [at] uni-leipzig.de](mailto:pablo.saavedra@uni-leipzig.de)<br>
+Faculty of Physics and Geosciences<br>
 University of Leipzig<br>
+🇩🇪
 
 See LICENSE

@@ -1,5 +1,5 @@
-# Part of ARNtools.jl
-# containing functions related to MWR products e.g. LOS, RET
+# Part of ARMtools.jl
+# Containing functions related to MWR products e.g. LOS, RET
 #
 
 # *************************************************
@@ -28,7 +28,7 @@ Attributes:
 * side_id
 * doi
 """
-function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
+function getMWRData(in_file::String; addvars=[], onlyvars=[], attrvars=[])
 
 
     ncvars = Dict(:time=>"time",
@@ -36,7 +36,7 @@ function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
                   :lon=>"lon",
                   :alt=>"alt")
 
-    if isvariablein(mwr_file, "be_lwp")
+    if isvariablein(in_file, "be_lwp")
         ncvars[:LWP] = "be_lwp";  # [g/m²]
         ncvars[:IWV] = "be_pwv";  # [cm]
         
@@ -47,7 +47,7 @@ function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
         ncvars[:CLT] = "cloud_temp"   # [K]
         ncvars[:SFT] = "surface_temp"   # [K]
         
-    elseif isvariablein(mwr_file, "liq")
+    elseif isvariablein(in_file, "liq")
         ncvars[:LWP] = "liq";  # [cm]
         ncvars[:IWV] = "vap";  # [cm]
         factor_lwp = 1f4;
@@ -59,13 +59,14 @@ function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
             :wet => "wet_window"
         )
     else
-        @error "None know LWP variables found in $mwr_file"
+        @warn "None know LWP variables found in $in_file"
+        return nothing
     end
     
     # for MWR data:
     ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
 
-    output = retrieveVariables(mwr_file, ncvars, attrvars=attrvars)
+    output = retrieveVariables(in_file, ncvars, attrvars=attrvars)
 
     # converting units for LWP and IWV
     if haskey(output, :LWP)

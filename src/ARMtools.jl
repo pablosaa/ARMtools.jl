@@ -169,12 +169,12 @@ end
 
 # ******************************************
 # * get data level from file name
-function giveme_datalavel(fname::String)
+function giveme_datalevel(fname::String)
     i1 = findfirst('.', fname)
     fname[i1+3] != '.' && error("$fname seems not to be ARM file?")
     return fname[i1+1:i1+2]
 end
-function giveme_datalavel(nc::NCDataset)
+function giveme_datalevel(nc::NCDataset)
     
     haskey(nc.attrib, "data_level") && error("input dataset seems not to be ARM file?")
     return nc.attrib["data_level"]
@@ -292,6 +292,12 @@ include("nav.jl")
 # Surface related functions:
 include("surface.jl")
 # ----/
+
+# *******************************************************************
+# Infrared Temperature functions:
+include("irt.jl")
+# ----/
+
 end # module
 
 
