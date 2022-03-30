@@ -85,7 +85,8 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
         # *******************************
         # reading variable:
         tmp_var = ncin[str_var][:,:]
-
+        ismissing(tmp_var) && continue
+        
         # getting missing value attribute:
         if haskey(ncin[str_var].attrib, "missing_value")
             miss_val = ncin[str_var].attrib["missing_value"]
@@ -96,8 +97,15 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
 
         # in case the variable has attribute _FillValue instead:
         if haskey(ncin[str_var].attrib, "_FillValue")
-            type_var = fillvalue(ncin[str_var])
-            tmp_var = NCDatasets.nomissing(tmp_var, eltype(type_var) <: AbstractFloat ? NaN : type_var)
+            type_var = skipmissing(tmp_var) |> eltype  #fillvalue(ncin[str_var])
+            fill_var = fillvalue(ncin[str_var])
+            tmp_var = if eltype(tmp_var)<:Union{Missing, Any}
+                NCDatasets.nomissing(tmp_var, type_var <: AbstractFloat ? NaN : fill_var)
+            elseif eltype(tmp_var)<:Missing
+                fill_var
+            else
+                tmp_var
+            end
         end
         
 	# selecting only data within given limits (if provided in attributes):
@@ -170,9 +178,20 @@ end
 # ******************************************
 # * get data level from file name
 function giveme_datalevel(fname::String)
-    i1 = findfirst('.', fname)
-    fname[i1+3] != '.' && error("$fname seems not to be ARM file?")
-    return fname[i1+1:i1+2]
+    data_level = try
+        nc = NCDataset(fname, "r")
+        giveme_datalevel(nc)
+    catch
+        i1 = findfirst('.', fname)
+        fname[i1+3] != '.' && error("$fname seems not to be ARM file?")
+        fname[i1+1:i1+2]
+    end
+    if any(==(data_level), ["a1", "b1", "b2", "c1", "c2"])
+        return data_level
+    else
+        @warn "ARM data level $(data_level) not recofnized!"
+        return nothing
+    end
 end
 function giveme_datalevel(nc::NCDataset)
     

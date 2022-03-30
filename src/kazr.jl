@@ -39,7 +39,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
     attrib = Dict()
 
     # checking which data level the input file is:
-    data_level = giveme_datalavel(input_file)
+    data_level = giveme_datalevel(input_file)
     
     if isvariablein(input_file, "height")
         # ARSCL file
@@ -78,9 +78,12 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                             :drg => "range_gate_spacing",
                             )
                )
-    elseif isinstrument(input_file, "MWACR")
+    elseif data_level=="a1" #isinstrument(input_file, "MWACR")
         # for MWACR type radar:
-        merge!(ncvars, Dict(:height => "range",
+        merge!(ncvars, Dict(:lat => "latitude",
+                            :lon => "longitude",
+                            :alt => "altitude_agl",
+                            :height => "range",
                             :Ze => "reflectivity",
                             :MDV => "mean_doppler_velocity",
                             :SPW => "spectral_width",
@@ -109,6 +112,32 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
     return output
 end
 # ----/
+function getKAZRData(rad_file::Vector{String}; addvars=[], onlyvars=[], attrvars=[])
+    rad_out = Dict{Symbol, Any}()
+    catvar = Dict{Symbol, Union{Nothing, Int}}()
+    ntime = -1
+
+    getdim(x,n) = findall(==(n), size(x))
+    
+    foreach(rad_file) do fn
+        # reading single file:
+        rad = getKAZRData(fn, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
+
+        if isempty(rad_out)
+            rad_out = rad
+            catvar = let ntime = length(rad[:time])
+                tmp = [k=>getdim(v, ntime) for (k,v) ∈ rad if typeof(v)<:Array]
+                filter(p->!isnothing(p.second), tmp) |> Dict
+            end
+        else
+            # merging every variable following time dimension v
+            [rad_out[k] = cat(rad_out[k], rad[k]; dims=v) for (k,v) ∈ catvar if !isempty(v)]
+        end
+    end
+    return rad_out
+end
+# ----/
+
 
 # *************************************************************************************
 # Function to estimate the Doppler velocity vector from given Nyquist velocty
