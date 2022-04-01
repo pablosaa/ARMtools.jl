@@ -60,8 +60,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     output = Dict()
     @assert isfile(ncfile) "reading $ncfile but not found!"
     ncin = NCDataset(ncfile)
-    for var ∈ ncvars
-        str_var = var[2]
+    for (key_var, str_var) ∈ ncvars
         
         # checking for scaling attributes to change the variable values:
         scale_factor = missing
@@ -84,24 +83,22 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
 
         # *******************************
         # reading variable:
-        tmp_var = ncin[str_var][:,:]
-        ismissing(tmp_var) && continue
+        tmp_var = ncin[str_var]
+        isempty(size(tmp_var)) && continue
         
         # getting missing value attribute:
-        if haskey(ncin[str_var].attrib, "missing_value")
-            miss_val = ncin[str_var].attrib["missing_value"]
-            type_var = eltype(skipmissin(tmp_var)) <: AbstractFloat ? NaN : miss_val
-            #tmp_var[tmp_var .≈ miss_val] .= type_var <: AbstractFloat ? NaN : fillvalue(type_var)
+        fill_val = let vartype = eltype(skipmissing(tmp_var))
+            tmp_fill = if haskey(tmp_var.attrib, "_FillValue")
+                fillvalue(tmp_var)
+            elseif haskey(tmp_var.attrib,  "missing_value")
+                tmp_var.attrib["missing_value"]
+            else
+                -696969
+            end
+            vartype <: AbstractFloat ? vartype(NaN) : tmp_fill
         end
-
-        # in case the variable has attribute _FillValue instead:
-        if haskey(ncin[str_var].attrib, "_FillValue")
-            fill_val = fillvalue(ncin[str_var])
-            type_var = eltype(skipmissing(tmp_var)) <: AbstractFloat ? NaN : fill_val
-
-        end
-        tmp_var = NCDatasets.nomissing(tmp_var, type_var)
-        
+        tmp_var = NCDatasets.nomissing(tmp_var[:], fill_val)
+                
 	# selecting only data within given limits (if provided in attributes):
         if haskey(ncin[str_var].attrib, "valid_min") && haskey(ncin[str_var].attrib, "valid_max")
             Vmin = ncin[str_var].attrib["valid_min"]
@@ -112,7 +109,6 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
         end
         
         # filling the output variable:
-        key_var = var[1]
         output[key_var] = tmp_var
     end
     
