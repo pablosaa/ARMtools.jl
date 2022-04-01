@@ -90,23 +90,17 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
         # getting missing value attribute:
         if haskey(ncin[str_var].attrib, "missing_value")
             miss_val = ncin[str_var].attrib["missing_value"]
-            type_var = eltype(tmp_var)
-            tmp_var[tmp_var .≈ miss_val] .= type_var <: AbstractFloat ? NaN : fillvalue(type_var)
-
+            type_var = eltype(skipmissin(tmp_var)) <: AbstractFloat ? NaN : miss_val
+            #tmp_var[tmp_var .≈ miss_val] .= type_var <: AbstractFloat ? NaN : fillvalue(type_var)
         end
 
         # in case the variable has attribute _FillValue instead:
         if haskey(ncin[str_var].attrib, "_FillValue")
-            type_var = skipmissing(tmp_var) |> eltype  #fillvalue(ncin[str_var])
-            fill_var = fillvalue(ncin[str_var])
-            tmp_var = if eltype(tmp_var)<:Union{Missing, Any}
-                NCDatasets.nomissing(tmp_var, type_var <: AbstractFloat ? NaN : fill_var)
-            elseif eltype(tmp_var)<:Missing
-                fill_var
-            else
-                tmp_var
-            end
+            fill_val = fillvalue(ncin[str_var])
+            type_var = eltype(skipmissing(tmp_var)) <: AbstractFloat ? NaN : fill_val
+
         end
+        tmp_var = NCDatasets.nomissing(tmp_var, type_var)
         
 	# selecting only data within given limits (if provided in attributes):
         if haskey(ncin[str_var].attrib, "valid_min") && haskey(ncin[str_var].attrib, "valid_max")
@@ -124,7 +118,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     
     # for global attributes:
     for (var, str_var) ∈ attrvars
-        haskey(ncin.attrib, str_var) ? println(var) : continue
+        !haskey(ncin.attrib, str_var) && continue
         local tmp_out = ncin.attrib[str_var] #|> split
 
         
