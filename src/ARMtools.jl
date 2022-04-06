@@ -84,8 +84,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
         # *******************************
         # reading variable:
         tmp_var = ncin[str_var]
-        isempty(size(tmp_var)) && continue
-        
+                
         # getting missing value attribute:
         fill_val = let vartype = eltype(skipmissing(tmp_var))
             tmp_fill = if haskey(tmp_var.attrib, "_FillValue")
@@ -97,15 +96,27 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
             end
             vartype <: AbstractFloat ? vartype(NaN) : tmp_fill
         end
-        tmp_var = NCDatasets.nomissing(tmp_var[:], fill_val)
-                
+        
+        tmp_var = let var_load=tmp_var[:]
+            try
+                if typeof(var_load)<:Array
+                    NCDatasets.nomissing(var_load, fill_val)
+                else
+                    ismissing(var_load) ?  NaN32 : var_load
+                end
+            catch
+                @warn "Variable $(str_var) seems empty or all ::Missing. Being skipped."
+                continue
+            end
+        end
+        
 	# selecting only data within given limits (if provided in attributes):
         if haskey(ncin[str_var].attrib, "valid_min") && haskey(ncin[str_var].attrib, "valid_max")
             Vmin = ncin[str_var].attrib["valid_min"]
             Vmax = ncin[str_var].attrib["valid_max"]
-            idx_out = findall(Vmin .< tmp_var .> Vmax)
+            idx_out = (Vmin .≤ tmp_var .≤ Vmax) .|> !
             
-            !isempty(idx_out) && (tmp_var[idx_out] .= NaN)
+            typeof(idx_out)<:Array ? (tmp_var[idx_out] .= NaN32) : (tmp_var = NaN32)
         end
         
         # filling the output variable:
