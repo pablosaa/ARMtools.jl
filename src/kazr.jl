@@ -89,11 +89,11 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                             :SPW => "spectral_width",
                             :Zxpol => "reflectivity_crosspolar_v",  # temporal
                             :SNR => "signal_to_noise_ratio_copolar_h",
+                            :radar_frequency => "frequency",
                             )
                )
         merge!(attrib, Dict(:location=>"facility_id",
                             :instrumentmodel=>"instrument_name",
-                            :radar_frequency => "radar_operating_frequency",
                             :fft_len => "fft_len",
                             :nyquist_velocity => "nyquist_velocity",
                             #:number_spectral_ave => "post_avg_len",
