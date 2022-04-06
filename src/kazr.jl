@@ -87,7 +87,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                             :Ze => "reflectivity",
                             :MDV => "mean_doppler_velocity",
                             :SPW => "spectral_width",
-                            :Zvpol => "reflectivity_crosspolar_v",  # temporal
+                            :Zxpol => "reflectivity_crosspolar_v",  # temporal
                             :SNR => "signal_to_noise_ratio_copolar_h",
                             )
                )
