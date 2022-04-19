@@ -184,10 +184,14 @@ julia> β, δ = calc_lidar_β(lidar::Dict, noise_params=(100, 1e-12, 2e-7, (1.1e
 
 This function can also be used with input as Matrix:
 julia> β, δ = calc_lidar_β(beta_raw::Matrix, depol_c::Matrix)
+julia> β, δ = calc_lidar_β(lidar_data::Dict)
+
+or
+
 julia> β = calc_lidar_β(beta_raw::Matrix, noise_params=...)
 
 """
-function calc_lidar_β(lidar::Dict, std_beta=nothing, noise_params=nothing)
+function calc_lidar_β(lidar::Dict; std_beta=nothing, noise_params=nothing)
 
     if haskey(lidar, :δ)
         return calc_lidar_β(lidar[:β_raw], std_beta=lidar[:SNR],

@@ -29,7 +29,9 @@ Attributes:
 * location_description
 * process_version
 """
-function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
+function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
+                     snr_filter=true)
+    
     # defaul netCDF variables to read from KAZR:
     ncvars = Dict(:time=>"time",
                   :lat=>"lat",
@@ -96,9 +98,9 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                             :instrumentmodel=>"instrument_name",
                             :fft_len => "fft_len",
                             :nyquist_velocity => "nyquist_velocity",
-                            #:number_spectral_ave => "post_avg_len",
-                            #:prf => "pulse_repetition_frequency",
-                            #:drg => "range_gate_spacing",
+                            :number_spectral_ave => "num_spectral_averages",
+                            :prf => "pulse_repetition_frequency",
+                            :drg => "range_gate_spacing_m",
                             )
                )
     else
@@ -109,6 +111,11 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[])
 
     output = retrieveVariables(input_file, ncvars, attrvars=attrib)
 
+    # filtering low reflectivity values if snr_filter is TRUE:
+    if snr_filter && haskey(output, :SNR)
+        filter_by_snr_threshold(output) 
+    end
+    
     return output
 end
 # ----/
@@ -279,7 +286,61 @@ end
 # ----/
 
 
+# ********************************************************
+# RADAR HELPER FUNCTIONS:
+# ********************************************************
+"""
+Function return the bool Matrix with true elements of matrix fulfills
+the condition that they are below the p % of the range [min max] of Matrix.
+julia> SNR_below_20percent = flag_array_below_lim(SNR, p=20)
+"""
+function flag_array_below_lim(X; p=20)
+    # converting % to real number:
+    thr0=1f-2p
+    # returning bool matrix:
+    X .< (filter(!isnan, X) |> extrema |> z->thr0*(z[2]-z[1]) + z[1])
+end
+# ----/
 
+"""
+Function to filter radar data based on a threshold of SNR:
+julia> filter_by_snr_threshold(radar)
+
+Note that radar Dict should already include the symbol :SNR containing the
+matrix with signal to noise ration to use for the filtering.
+
+To filter only one radar variable e.g. Ze use:
+julia> filter_by_snr_threshold(radar, vars=(:Ze,))
+
+"""
+function filter_by_snr_threshold(data::Dict; snr_lim=20, vars=())
+        
+    bot_val = nothing
+    snr_dims = ()
+
+    if haskey(data, :SNR)
+        snr_dims = size(data[:SNR])
+        bot_val = flag_array_below_lim(data[:SNR])
+    else
+        @warn "input data does not contain :SNR "
+        return nothing
+    end
+    
+    for (k,V) ∈ data
+        k == :SNR && continue
+        !isempty(vars) && all(k .!= vars) && continue
+        !(typeof(V) <: Array) && continue
+        (size(V) != snr_dims) && continue
+        data[k][bot_val] .= NaN
+    end
+
+    return true
+end
+# ----/
+
+# ********************************************************
+# SPECTRUM HELPER FUNCTIONS:
+# ********************************************************
 # *************************************************************************************
 # Following Hildebrand P.H. and Sekhon R.S. (1974) Paper:
 # "Objective Determination of the Noise Level in Doppler Spectra"
@@ -352,9 +413,6 @@ function Extract_Spectra_NL(Zη::Matrix; p::Int=1)
 end
 # ----/
 
-# ********************************************************
-# SPECTRUM HELPER FUNCTIONS:
-# ********************************************************
 # Integrate spectral reflectivity
 function ∫zdη(η::T; i₀=1, i₁=size(η, 1)) where T<:AbstractArray
     i₀ = max(i₀, 1)

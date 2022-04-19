@@ -116,7 +116,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
             Vmax = ncin[str_var].attrib["valid_max"]
             idx_out = (Vmin .≤ tmp_var .≤ Vmax) .|> !
             
-            typeof(idx_out)<:Array ? (tmp_var[idx_out] .= NaN32) : (tmp_var = NaN32)
+            typeof(idx_out)<:BitArray ? (tmp_var[idx_out] .= NaN32) : (tmp_var = NaN32)
         end
         
         # filling the output variable:
