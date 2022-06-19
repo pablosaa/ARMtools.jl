@@ -187,10 +187,10 @@ function giveme_datalevel(fname::String)
         fname[i1+3] != '.' && error("$fname seems not to be ARM file?")
         fname[i1+1:i1+2]
     end
-    if any(==(data_level), ["a1", "b1", "b2", "c1", "c2"])
+    if any(==(data_level), ["a1", "b1", "b2", "c0", "c1", "c2"])
         return data_level
     else
-        @warn "ARM data level $(data_level) not recofnized!"
+        @warn "ARM data level $(data_level) not recognized!"
         return nothing
     end
 end
