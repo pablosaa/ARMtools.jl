@@ -45,7 +45,12 @@ end
 # Function to read RADFLUX data
 """
 Function to read the data files for RADFLUX database
-> read_radflux(input_file::String)
+
+julia> read_radflux(input_file::String)
+
+or, for a set of input files input as Vector{String}
+
+julia> read_radflux(input_file::Vector{String})
 
 Output is a Dictionary with all default variables:
 """
@@ -83,11 +88,35 @@ function read_radflux(input_file::String; addvars=[], onlyvars=[], attrvars=[])
                         )
            )
 
-    ncvars = ARM.sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
+    ncvars = sortVariables(ncvars, onlyvars=onlyvars, addvars=addvars)
 
-    output = ARM.retrieveVariables(input_file, ncvars, attrvars=attrib)
+    output = retrieveVariables(input_file, ncvars, attrvars=attrib)
 
     return output
+end
+function read_radflux(input_file::Vector{String}; addvars=[], onlyvars=[], attrvars=[])
+    rad_out = Dict{Symbol, Any}()
+    catvar = Dict{Symbol, Union{Nothing, Int}}()
+    ntime = -1
+
+    getdim(x,n) = findall(==(n), size(x))
+
+    foreach(rad_file) do fn
+        # reading single file
+        rad = read_radflux(fn, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
+
+        if isempty(rad_out)
+            rad_out = rad
+            catvar = let ntime=length(rad[:time])
+                tmp = [k=>getdim(v, ntime) for (k,v) ∈ rad if typeof(v)<:Array]
+                filter(p->!isnothing(p.second), tmp) |> Dict
+            end
+        else
+            # merging every variable following time dimension v
+            [rad_out[k] = cat(rad_out[k], rad[k]; dims=v) for (k,v) ∈ catvar if !isempty(v)]
+        end
+    end
+    return rad_out
 end
 # ----/
 

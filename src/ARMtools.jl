@@ -116,7 +116,11 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
             Vmax = ncin[str_var].attrib["valid_max"]
             idx_out = (Vmin .≤ tmp_var .≤ Vmax) .|> !
             
-            typeof(idx_out)<:BitArray ? (tmp_var[idx_out] .= NaN32) : (tmp_var = NaN32)
+            if typeof(idx_out)<:BitArray
+                tmp_var[idx_out] .= NaN32
+            elseif idx_out
+                tmp_var = NaN32
+            end
         end
         
         # filling the output variable:
@@ -239,11 +243,11 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
     end
 
     if typeof(ofile)<:Array && length(ofile)>1
-        @warn "Multiple files match the pattern $(pattern) !!."
+        @warn "Multiple $product files match the pattern $(pattern) !!."
         return ofile
         
     elseif isempty(ofile)
-        @warn "No files were found with the pattern $pattern !"
+        @warn "No $product files were found with the pattern $pattern !"
         return nothing
     else
         return ofile[1]
