@@ -101,7 +101,7 @@ function read_radflux(input_file::Vector{String}; addvars=[], onlyvars=[], attrv
 
     getdim(x,n) = findall(==(n), size(x))
 
-    foreach(rad_file) do fn
+    foreach(input_file) do fn
         # reading single file
         rad = read_radflux(fn, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
 
