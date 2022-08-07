@@ -397,9 +397,9 @@ function Extract_Spectra_NL(Zη::Matrix; p::Int=1)
 	# Correcting spectral reflectivity from noise level:
 	Zη_cor[:, idx], SNR_dB[:, idx] = let tmp = (S .- Pnoise2)
 	    tmp[tmp.≤0] .= NaN
-	    ii = tmp .≤ (Pnoise2 + sqrt(Qnoise2))
+            ii = findall(tmp .≤ (Pnoise2 + sqrt(Qnoise2))) #tmp .≤ (Pnoise2 + sqrt(Qnoise2))
 	    NoiseMean = mean(tmp[ii])	
-	    NoisePeak = maximum(tmp[ii])
+            NoisePeak = isempty(ii) ? Pnoise2 : maximum(tmp[ii])
 	    NoiseStdv = std(tmp[ii])
 	    tmp[(tmp .≤ NoisePeak) .| isnan.(tmp)] .= Pnoise2
 			
