@@ -194,11 +194,11 @@ julia> β = calc_lidar_β(beta_raw::Matrix, noise_params=...)
 function calc_lidar_β(lidar::Dict; std_beta=nothing, noise_params=nothing)
 
     if haskey(lidar, :δ)
-        return calc_lidar_β(lidar[:β_raw], std_beta=lidar[:SNR],
+        return calc_lidar_β(lidar[:β_raw], lidar[:height], std_beta=lidar[:SNR],
                             noise_params=noise_params,
                             depol_c=lidar[:δ])
     else
-        return calc_lidar_β(lidar[:β_raw], std_beta=lidar[:SNR],
+        return calc_lidar_β(lidar[:β_raw], lidar[:height], std_beta=lidar[:SNR],
                             noise_params=noise_params)
     end
     
