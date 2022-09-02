@@ -22,6 +22,7 @@ using Statistics
 using Printf
 using Wavelets
 using Dates
+using Interpolations
 
 # *************************************************************
 ## * Auxiliary functions:
