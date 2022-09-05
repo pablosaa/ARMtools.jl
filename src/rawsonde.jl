@@ -63,21 +63,24 @@ Function to merge surface Temperature to Radiosonde data.
 
 USAGE:
 
-julia> attach\\_Tₛ!(RS::Dict, Tₛ::Vector, time\\_Tₛ::Vector)
+julia> attach\\_Tₛ!(RS, Tₛ, time\\_Tₛ)
 
-julia> attach\\_Tₛ!(RS::Dict, Tₛ::Vector, time\\_Tₛ::Vector; Hₛ=2)
+julia> attach\\_Tₛ!(RS, Tₛ, time\\_Tₛ; Hₛ=2)
 
-julia> attach\\_Tₛ!(RS::Dict, IRT::Dict)
+julia> attach\\_Tₛ!(RS, IRT)
 
-WHERE
-* RS : the radiosonde data as output by getSondeData()
-* Tₛ : Vector with the temperature in °C
-* time_Tₛ : Vector with the time for Tₛ
-* Hₛ : height in m above surface to attach Tₛ (default 0 m)
-* IRT: the ground infrared thermomether data as output by getGNDURTdata()
+WHERE:
+* RS::Dict  the radiosonde data as output by getSondeData()
+* Tₛ::Vector  Vector with the temperature in °C
+* time_Tₛ::Vector{DateTime}  Vector with the time for Tₛ
+* Hₛ::Number  height in m above surface to attach Tₛ (default 0 m)
+* IRT::Dict the ground infrared thermomether data as output by getGNDURTdata()
 
 OUTPUT:
-A modified Radiosonde data Dictionary.
+A Dict with the modified Radiosonde data including a layer in Hₛ with IRT in °C.
+
+NOTE: when using IRD::Dict, it is assumed IRD[:TIR] is in K
+
 """
 function attach_Tₛ!(RS::Dict, Tₛ::Vector, time_Tₛ::Vector; Hₛ=0.0)
 
@@ -98,17 +101,19 @@ function attach_Tₛ!(RS::Dict, Tₛ::Vector, time_Tₛ::Vector; Hₛ=0.0)
         if k == :time
             X = V
         elseif k == :T
+            # for temperature, only 1-D interpolation on time resolution of RS:
             rs_extrap = LinearInterpolation(ir_thr, Tₛ, extrapolation_bc=Line())
-            X[1,:] = rs_extrap(Hₛ, rs_thr)
+            X[1,:] = rs_extrap(rs_thr)
         elseif k == :height
             X = vcat(Hₛ, V)
         else
             rs_extrap = LinearInterpolation(nodes, V, extrapolation_bc=Line());
-            X[1,:] = rs_extrap.(Hₛ, rs_thr)
+            X[1,:] = rs_extrap(Hₛ, rs_thr)
         
         end
         RS[k] = X
     end
+    
 end
 function attach_Tₛ!(RS::Dict, IRT::Dict; Hₛ=0.0)
     !haskey(IRT, :time) && (@error "second argument IRT::Dict needs key :time")
