@@ -23,6 +23,7 @@ using Printf
 using Wavelets
 using Dates
 using Interpolations
+using ImageFiltering
 
 # *************************************************************
 ## * Auxiliary functions:

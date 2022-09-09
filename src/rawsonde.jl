@@ -118,7 +118,9 @@ end
 function attach_Tₛ!(RS::Dict, IRT::Dict; Hₛ=0.0)
     !haskey(IRT, :time) && (@error "second argument IRT::Dict needs key :time")
     !haskey(IRT, :IRT)  && (@error "seocnd argument IRT::Dict needs key :IRT in K")
-    Ts = IRT[:IRT] .- 273.15
+
+    # IR T is normally noisy, smoothing needed for stability calculations:
+    Ts = mapwindow(mean, IRT[:IRT], 9) .- 273.15
     time_Ts = IRT[:time]
     ARMtools.attach_Tₛ!(RS, Ts, time_Ts; Hₛ=Hₛ)
 end
