@@ -102,12 +102,12 @@ function attach_Tₛ!(RS::Dict, Tₛ::Vector, time_Tₛ::Vector; Hₛ=0.0)
             X = V
         elseif k == :T
             # for temperature, only 1-D interpolation on time resolution of RS:
-            rs_extrap = LinearInterpolation(ir_thr, Tₛ, extrapolation_bc=Line())
+            rs_extrap = LinearInterpolation(ir_thr, Tₛ, extrapolation_bc=Flat())
             X[1,:] = rs_extrap(rs_thr)
         elseif k == :height
             X = vcat(Hₛ, V)
         else
-            rs_extrap = LinearInterpolation(nodes, V, extrapolation_bc=Line());
+            rs_extrap = LinearInterpolation(nodes, V, extrapolation_bc=Flat());
             X[1,:] = rs_extrap(Hₛ, rs_thr)
         
         end
