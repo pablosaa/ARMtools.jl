@@ -44,6 +44,31 @@ function getGNDIRTdata(in_file::String; addvars=[], onlyvars=[], attrvars=[])
 
     return output
 end
+function getGNDIRTdata(in_file::Vector{String}; addvars=[], onlyvars=[], attrvars=[])
+    dat_out = Dict{Symbol, Any}()
+    catvar = Dict{Symbol, Union{Nothing, Int}}()
+    ntime = -1
+
+    getdim(x,n) = findall(==(n), size(x))
+    
+    foreach(in_file) do fn
+        # reading single file:
+        data = getGNDIRTdata(fn, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
+
+        if isempty(dat_out)
+            dat_out = data
+            catvar = let ntime = length(data[:time])
+                tmp = [k=>getdim(v, ntime) for (k,v) ∈ data if typeof(v)<:Array]
+                filter(p->!isnothing(p.second), tmp) |> Dict
+            end
+        else
+            # merging every variable following time dimension v
+            [dat_out[k] = cat(dat_out[k], data[k]; dims=v) for (k,v) ∈ catvar if !isempty(v)]
+        end
+    end
+    return dat_out
+
+end
 # ----/
 
 # end of file
