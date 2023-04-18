@@ -4,9 +4,9 @@
 # ***************************************************************************
 # Function to read KAZR ARSCRL data
 """
-Function getKAZRData(file_name::String)
+Function getKAZRData(file\\_name::String)
 
-This will read the ARM datafile 'file_name.nc' and return a Dictionary
+This will read the ARM datafile 'file\\_name.nc' and return a Dictionary
 with the defaul data fields.
 The default data fields are:
 * :time
@@ -16,6 +16,7 @@ The default data fields are:
 * :SPW
 * :LDR
 * :SNR
+* :RR
 
 Alternative variables can be:
 * 
@@ -25,9 +26,9 @@ Alternative variables can be:
 * alt => altitude above mean sea level
 
 Attributes:
-* radar_operating_frequency_chrip
-* location_description
-* process_version
+* radar\\_operating\\_frequency\\_chrip
+* location\\_description
+* process\\_version
 """
 function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
                      snr_filter=true)
@@ -51,6 +52,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
                             :SPW=>"spectral_width",
                             :LDR=>"linear_depolarization_ratio",
                             :SNR=>"signal_to_noise_ratio",
+                            :RR=>"precip_mean",
                             )
                )
         
@@ -307,7 +309,7 @@ Function to filter radar data based on a threshold of SNR:
 julia> filter_by_snr_threshold(radar)
 
 Note that radar Dict should already include the symbol :SNR containing the
-matrix with signal to noise ration to use for the filtering.
+matrix with signal-to-noise-ratio to use for the filtering.
 
 To filter only one radar variable e.g. Ze use:
 julia> filter_by_snr_threshold(radar, vars=(:Ze,))
@@ -441,6 +443,32 @@ function extract2DSpectrogram(spec::Dict, idx::Int; var::Symbol=:η_hh, fill_val
 	
     return out2D, rng_lim
 end
+# ----/
+
+#= ********************************************************
+Function to reshape matrix or vector M into a 2D shape given by "masked"
+masked needs to be a bool matrix or Int matrix
+=#
+function maskedReshape(M::T, masked::T; Dim3=nothing) where T<:AbstractArray
+    # verifying dimensions match:
+    (prod∘sum)(M) == Dim3*length(masked[:])
+    xy = size(masked)
+    DimXY = isnothing(Dim3) ? xy : (xy...,Dim3)
+    M_out = fill(NaN32, DimXY)
+    idx_xy = cumsum(masked[:]) |> A->reshape(A, xy)
+    for i ∈ 1:xy[1]
+        for j ∈ 1:xy[2]
+            !masked[i,j] && continue
+            if isnothing(Dim3)
+                M_out[i,j] = M[idx_xy[i,j]]
+            else
+                M_out[i,j,:] = M[idx_xy[i,j],:]
+            end
+        end
+    end
+    return M_out
+end
+# ---/
 
 # end of script.
 # *****************************************************************
