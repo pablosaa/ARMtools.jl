@@ -6,7 +6,13 @@
 """
 Function getKAZRData(file\\_name::String)
 
-This will read the ARM datafile 'file\\_name.nc' and return a Dictionary
+    julia> radar = getKAZRData("kazr\\_datafile.nc")
+
+    julia> radar = getKAZRData("kazr\\_datafile.nc", snr_filter=25)
+
+    julia> radar = getKAZRData("kazr\\_datafile.nc", snr_filter=nothing)
+
+This will read the ARM datafile 'kazr\\_datafile.nc' and return a Dictionary
 with the defaul data fields.
 The default data fields are:
 * :time
@@ -17,6 +23,9 @@ The default data fields are:
 * :LDR
 * :SNR
 * :RR
+
+OPTIONAL:
+* snr_filter (Default 20%): to filter data using the percentage of (SNR_max - SNR_min)
 
 Alternative variables can be:
 * 
@@ -31,7 +40,7 @@ Attributes:
 * process\\_version
 """
 function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
-                     snr_filter=true)
+                     snr_filter=20)
     
     # defaul netCDF variables to read from KAZR:
     ncvars = Dict(:time=>"time",
@@ -64,6 +73,14 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
                )
     elseif isvariablein(input_file, "reflectivity_copol")
         # for KAZR GE or MD data file:
+        #= NOTE: KAZR GE variable names and units, e.g. for frequency depends on type of product datastream:
+        for instance mosaic datastream="moskazrcfrgeM1.a1" frequency is variable and in Hz
+        whereas for nsa datastream="nsakazrgeC1.a1" frequency is a global attribute :radar_operating_frequency = "34.830000 GHz" ;
+        So, the assignation of variables to read needs to be done not onyl based on product level "a1", "c1", etc. but also
+        based on the datastream like "KAZR GE" or "KAZR CFR GE".
+        For ARSCL level c0, the frequency is a global attribute :radar_operating_frequency_chirp = "34.890000 GHz"
+        This correction need to be implemented. 
+        =#
         merge!(ncvars, Dict(:height => "range",
                             :Ze => "reflectivity_copol",
                             :MDV => "mean_doppler_velocity_copol",
@@ -113,9 +130,11 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
 
     output = retrieveVariables(input_file, ncvars, attrvars=attrib)
 
+    # =========================================================
     # filtering low reflectivity values if snr_filter is TRUE:
-    if snr_filter && haskey(output, :SNR)
-        filter_by_snr_threshold(output) 
+    if !isnothing(snr_filter) && haskey(output, :SNR)
+        !(0 < snr_filter < 100) && @error("snr_filter optional value out of range: ")
+        filter_by_snr_threshold(output, snr_lim=snr_filter) 
     end
     
     return output
@@ -322,7 +341,7 @@ function filter_by_snr_threshold(data::Dict; snr_lim=20, vars=())
 
     if haskey(data, :SNR)
         snr_dims = size(data[:SNR])
-        bot_val = flag_array_below_lim(data[:SNR])
+        bot_val = flag_array_below_lim(data[:SNR], p=snr_lim)
     else
         @warn "input data does not contain :SNR "
         return nothing

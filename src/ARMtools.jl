@@ -324,6 +324,12 @@ include("surface.jl")
 include("irt.jl")
 # ----/
 
+# *******************************************************************
+# Light Sensor functions (e.g. Parsivel 2):
+include("ld.jl")
+# ----/
+
+
 end # module
 
 
