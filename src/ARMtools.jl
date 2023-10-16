@@ -189,9 +189,10 @@ function giveme_datalevel(fname::String)
         nc = NCDataset(fname, "r")
         giveme_datalevel(nc)
     catch
-        i1 = findfirst('.', fname)
-        fname[i1+3] != '.' && error("$fname seems not to be ARM file?")
-        fname[i1+1:i1+2]
+        bfname = basename(fname)
+        i1 = findfirst('.', bfname)
+        bfname[i1+3] != '.' && error("$bfname seems not to be ARM file?")
+        bfname[i1+1:i1+2]
     end
     if any(==(data_level), ["a1", "b1", "b2", "c0", "c1", "c2"])
         return data_level
@@ -202,7 +203,7 @@ function giveme_datalevel(fname::String)
 end
 function giveme_datalevel(nc::NCDataset)
     
-    haskey(nc.attrib, "data_level") && error("input dataset seems not to be ARM file?")
+    !haskey(nc.attrib, "data_level") && error("input dataset seems not to be ARM file?")
     return nc.attrib["data_level"]
 end
 
