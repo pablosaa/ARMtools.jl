@@ -85,24 +85,26 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
 
         # *******************************
         # reading variable:
-        tmp_var = ncin[str_var]
-                
-        # getting missing value attribute:
-        fill_val = let vartype = eltype(skipmissing(tmp_var))
-            tmp_fill = if haskey(tmp_var.attrib, "_FillValue")
-                fillvalue(tmp_var)
-            elseif haskey(tmp_var.attrib,  "missing_value")
-                tmp_var.attrib["missing_value"]
-            else
-                -696969
+        tmp_var = let tmp_var = ncin[str_var]
+            
+            vartype = eltype(skipmissing(tmp_var))
+            # getting missing value attribute:
+            fill_val = begin
+                tmp_fill = if haskey(tmp_var.attrib, "_FillValue")
+                    fillvalue(tmp_var)
+                elseif haskey(tmp_var.attrib,  "missing_value")
+                    tmp_var.attrib["missing_value"]
+                else
+                    -696969
+                end
+                vartype <: AbstractFloat ? vartype(NaN) : tmp_fill
             end
-            vartype <: AbstractFloat ? vartype(NaN) : tmp_fill
-        end
         
-        tmp_var = let var_load=tmp_var[:]
+            #tmp_var = let
+            var_load=tmp_var[:]
             try
                 if typeof(var_load)<:Array
-                    NCDatasets.nomissing(var_load, fill_val)
+                    NCDatasets.nomissing(var_load, vartype<:DateTime || fill_val)
                 else
                     ismissing(var_load) ?  NaN32 : var_load
                 end
