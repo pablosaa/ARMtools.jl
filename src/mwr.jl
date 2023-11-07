@@ -5,9 +5,18 @@
 # *************************************************
 # Function to read MWR RET products
 """
-Function getMWRData(mwr_file::String; addvars=[], onlyvars=[], attrvars=[])
+Function to read data from MWR RET product from ARM.
 
-This function read data from the Microwave Radiometer RET retrievals
+```julia-repl
+julia> mwr = getMWRData(mwr_file)
+julia> mwr = getMWRData(mwr_file; addvars=["alt", "lon", "lat"])
+julia> mwr = getMWRData(mwr_file; onlyvars=["tbsky23"], attrvars=["doi"])
+```
+WHERE:
+* mwr\\_file::String full path to file name to read,
+* addvars::Vector{String} list of additional NetCDF variables to read,
+* onlyvars::Vector{String} read only the listed variables,
+* attrvars::Vector{String} additionally read the listed attributes.
 
 The default data fields are:
 * :time
@@ -15,20 +24,25 @@ The default data fields are:
 * :IWV
 
 Alternative variables can be:
-* lat => North latitude
-* lon => East longitude
-* alt => altitude above mean sea level
-* surface_vapor_pres => 
-* surface_pres => 
-* surface_rh =>
-* tbsky23 => Brightness Temperature at 23GHz [K]
-* tbsky31 => Brightness Temperature at 31GHz [K]
+* lat => North latitude,
+* lon => East longitude,
+* alt => altitude above mean sea level (instrument level),
+* surface\\_vapor\\_pres =>  Intrument level vapor pressure,
+* surface\\_pres =>  Instrument level pressure,
+* surface\\_rh => Instrument level relative humidity,
+* tbsky23 => Brightness Temperature at 23GHz [K],
+* tbsky31 => Brightness Temperature at 31GHz [K],
 
-Attributes:
+Example of attributes:
 * side_id
 * doi
+
+SUPPORTED PRODUCTS:
+* MWR RET
+* MWR LOS
+
 """
-function getMWRData(in_file::String; addvars=[], onlyvars=[], attrvars=[])
+function getMWRData(in_file::String; addvars=[], onlyvars=[], attrvars=[], extras...)
 
 
     ncvars = Dict(:time=>"time",

@@ -6,12 +6,11 @@
 """
 Function getKAZRData(file\\_name::String)
 
-    julia> radar = getKAZRData("kazr\\_datafile.nc")
-
-    julia> radar = getKAZRData("kazr\\_datafile.nc", snr_filter=25)
-
-    julia> radar = getKAZRData("kazr\\_datafile.nc", snr_filter=nothing)
-
+```julia-repl
+julia> radar = getKAZRData("kazr_datafile.nc")
+julia> radar = getKAZRData("kazr_datafile.nc", snr_filter=25)
+julia> radar = getKAZRData("kazr_datafile.nc", snr_filter=nothing)
+```
 This will read the ARM datafile 'kazr\\_datafile.nc' and return a Dictionary
 with the defaul data fields.
 The default data fields are:
@@ -25,22 +24,24 @@ The default data fields are:
 * :RR
 
 OPTIONAL:
-* snr_filter (Default 20%): to filter data using the percentage of (SNR_max - SNR_min)
+* snr_filter (Default 20%): to filter data using the percentage of (SNR\\_max - SNR\\_min)
 
-Alternative variables can be:
-* 
-* 
-* lat => North latitude
-* lon => East longitude
-* alt => altitude above mean sea level
+Adiotional variables in the NetCDF file can be read by:
+* addvars = ["lat", "lon", "alt"] , default []
 
-Attributes:
+Selected varaibles can be read by:
+* onlyvars = ["Ze"], default []
+
+Selected attributes can be read by:
+* attrvars = ["process\\_version"], default []
+
+Example of Attributes:
 * radar\\_operating\\_frequency\\_chrip
 * location\\_description
 * process\\_version
 """
 function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
-                     snr_filter=20)
+                     snr_filter=20, extras...)
     
     # defaul netCDF variables to read from KAZR:
     ncvars = Dict(:time=>"time",
@@ -140,7 +141,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
     return output
 end
 # ----/
-function getKAZRData(rad_file::Vector{String}; addvars=[], onlyvars=[], attrvars=[])
+function getKAZRData(rad_file::Vector{String}; addvars=[], onlyvars=[], attrvars=[], snr_filter=20, extras...)
     rad_out = Dict{Symbol, Any}()
     catvar = Dict{Symbol, Union{Nothing, Int}}()
     ntime = -1
@@ -149,7 +150,11 @@ function getKAZRData(rad_file::Vector{String}; addvars=[], onlyvars=[], attrvars
     
     foreach(rad_file) do fn
         # reading single file:
-        rad = getKAZRData(fn, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
+        rad = getKAZRData(fn,
+                          addvars=addvars,
+                          onlyvars=onlyvars,
+                          attrvars=attrvars,
+                          snr_filter=snr_filter, extras...)
 
         if isempty(rad_out)
             rad_out = rad
@@ -220,7 +225,7 @@ file names are sorted in such a way the time dimension monotonically increases,
 otherwise the time dimension will be mixed up.
 
 """
-function readSPECCOPOLc0(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
+function readSPECCOPOLc0(kazr_file::String; addvars=[], onlyvars=[], attvars=[], extras...)
 
     ncvars = Dict(:time=>"time",
                   :height=>"range",  # [m]
@@ -236,13 +241,16 @@ function readSPECCOPOLc0(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
 
     return output
 end
-function readSPECCOPOL(kazr_file::Vector{String}; addvars=[], onlyvars=[], attvars=[])
+function readSPECCOPOL(kazr_file::Vector{String}; addvars=[], onlyvars=[], attvars=[], extras...)
     # for a list of files:
     spec_out = Dict{Symbol, Any}()
     catvar = Dict(:time=>1, :η_hh=>2, :spect_mask=>2)
 
     foreach(kazr_file) do fn
-        spec = readSPECCOPOL(fn, addvars=addvars, onlyvars=onlyvars, attvars=attvars)
+        spec = readSPECCOPOL(fn,
+                             addvars=addvars,
+                             onlyvars=onlyvars,
+                             attvars=attvars, extras...)
 
         if isempty(spec_out) #fn==kazr_file[1]
             spec_out = spec
@@ -256,7 +264,7 @@ function readSPECCOPOL(kazr_file::Vector{String}; addvars=[], onlyvars=[], attva
     return spec_out
 end
 
-function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[])
+function readSPECCOPOL(kazr_file::String; addvars=[], onlyvars=[], attvars=[], extras...)
 
     # Checking which spectrum data have the file:
     if isvariablein(kazr_file, "spectra")
@@ -313,7 +321,9 @@ end
 """
 Function return the bool Matrix with true elements of matrix fulfills
 the condition that they are below the p % of the range [min max] of Matrix.
+```julia-repl
 julia> SNR_below_20percent = flag_array_below_lim(SNR, p=20)
+```
 """
 function flag_array_below_lim(X; p=20)
     # converting % to real number:
@@ -325,14 +335,16 @@ end
 
 """
 Function to filter radar data based on a threshold of SNR:
+```julia-repl
 julia> filter_by_snr_threshold(radar)
-
-Note that radar Dict should already include the symbol :SNR containing the
+```
+Note that radar::Dict should already include the symbol :SNR containing the
 matrix with signal-to-noise-ratio to use for the filtering.
 
 To filter only one radar variable e.g. Ze use:
+```julia-repl
 julia> filter_by_snr_threshold(radar, vars=(:Ze,))
-
+```
 """
 function filter_by_snr_threshold(data::Dict; snr_lim=20, vars=())
         
