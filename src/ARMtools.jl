@@ -215,23 +215,34 @@ end
 Function to obtain list of files/single file which compraises with given criterium.
 
 USAGE:
-> files = getFilePattern(path::String, product::String, yy, mm ,dd; hh, submonth=false, fileext=".nc")
-
+```julia-repl
+julia> files = getFilePattern(path, product, yy, mm ,dd)
+julia> files = getFilePattern(path, product, yy, mm ,dd; hh, submonth=true, fileext=".nc")
+julia> files = getFilePattern(path, product, yy, mm ,dd, subyear=false)
+```
 WHERE:
-* path::String the path where to look files
-* product::String Product name, then the files are scanned at "path/product"
-* yy, mm, dd are the year, month and day, then the scanning is at "path/product/yy/*yymmdd*"
-* hh (optional) is the hour, if specified the scanning follows "path/product/yy/*yymmdd.hh*"
-* submonth (optional) is a flag to create sub-folder with month "path/product/yy/mm/*yymmdd*"
-* fileext (optional) searchs for files with the extendion "path/product/yy/mm/*yymmdd*.fileext"
+* path::String the full path where to look for files,
+* product::String Product name, then the files are scanned at "path/product",
+* yy::Int, mm::Int, dd::Int are the year, month and day, the search is at "path/product/yy/*yymmdd*"
+* hh::Int (optional, default=nothing) is the hour, if specified search "path/product/yy/*yymmdd.hh*"
+* submonth::Bool (optional, default=false) to search sub-folder with month "path/product/yy/mm/*yymmdd*"
+* subyear::Bool (optional, default=true) to search sub-folder with year "path/product/yy/*yymmdd*"
+* fileext::String (optional, default="") searchs for files with the extendion "path/product/yy/mm/*yymmdd*.fileext"
 
-If it matchs multiple files the output will be a Vector{String} otherwise a String or nothing
+If it matchs multiple files the output will be a Vector{String} otherwise a String or nothing in case no search did not match any files.
 
 """
 function getFilePattern(path::String, product::String, yy, mm, dd;
-                        hh=nothing, submonth=false, fileext::String="")
+                        hh=nothing, subyear=true, submonth=false, fileext::String="")
 
-    yyyy_mm_dir = submonth ? @sprintf("%04d/%02d", yy, mm) : @sprintf("%04d", yy)
+    yyyy_mm_dir = if subyear && !submonth
+        @sprintf("%04d", yy)
+    elseif subyear && submonth
+        @sprintf("%04d/%02d", yy, mm)
+    else
+        ""
+    end
+       
     base_dir = joinpath(path, product, yyyy_mm_dir)
         
     @assert isdir(base_dir) error("$base_dir seems it does not exist!")
@@ -252,7 +263,7 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
         return ofile
         
     elseif isempty(ofile)
-        @warn "No $product files were found with the pattern $pattern !"
+        @warn "No $product at $(path) with the pattern $pattern were found!"
         return nothing
     else
         return ofile[1]
