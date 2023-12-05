@@ -343,6 +343,10 @@ include("irt.jl")
 include("ld.jl")
 # ----/
 
+# *******************************************************************
+# Present Wather Sensor functions (PWD):
+include("pwd.jl")
+# ----/
 
 end # module
 
