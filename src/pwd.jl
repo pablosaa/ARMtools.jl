@@ -33,8 +33,8 @@ OUTPUT:
 * :alt
 * :vis   = "1 minute mean visibility"    # [m]
 * :PR    = "1 minute mean precip_rate"   # [mm hr⁻¹]
-* :rain = "cumulative rain"             # [mm]
-* :snow = "cumulative snow"             # [mm]
+* :Σrain = "cumulative rain"             # [mm]
+* :Σsnow = "cumulative snow"             # [mm]
 * :code  = "instantaneous weather code"  # [-]
 
 Alternative variables can be:
@@ -84,7 +84,7 @@ function getPWDdata(in_file::Vector{String}; addvars=[], onlyvars=[], attrvars=[
     
     foreach(in_file) do fn
         # reading single file:
-        data = getLDdata(fn, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
+        data = getPWDdata(fn, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
 
         if isempty(dat_out)
             dat_out = data
