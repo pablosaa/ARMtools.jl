@@ -212,7 +212,7 @@ end
 # ****************************************
 # * get file from pattern:
 """
-Function to obtain list of files/single file which compraises with given criterium.
+Function to obtain list of archives which file names are compliant to a given criteria.
 
 USAGE:
 ```julia-repl
@@ -229,8 +229,7 @@ WHERE:
 * subyear::Bool (optional, default=true) to search sub-folder with year "path/product/yy/*yymmdd*"
 * fileext::String (optional, default="") searchs for files with the extendion "path/product/yy/mm/*yymmdd*.fileext"
 
-If it matchs multiple files the output will be a Vector{String} otherwise a String or nothing in case no search did not match any files.
-
+If criteria matches multiple files the output will be a ```Vector{String}```, otherwise a ```String``` with full path is returned. In case the search did not find any files, then ```nothing``` is returned.
 """
 function getFilePattern(path::String, product::String, yy, mm, dd;
                         hh=nothing, subyear=true, submonth=false, fileext::String="")
@@ -245,7 +244,7 @@ function getFilePattern(path::String, product::String, yy, mm, dd;
        
     base_dir = joinpath(path, product, yyyy_mm_dir)
         
-    @assert isdir(base_dir) error("$base_dir seems it does not exist!")
+    @assert isdir(base_dir) (@warn("$base_dir seems not to exist!"); return nothing)
     
     list_file = readdir(base_dir, join=true)
     if !isnothing(hh)
