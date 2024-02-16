@@ -72,6 +72,25 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
                             :doi => "doi"
                             )
                )
+    elseif isinstrument(input_file, "kazrcfrcorge")
+        # KAZR CFR CORGE
+        merge!(ncvars, Dict(:height=>"range",
+                            :Ze=>"reflectivity",
+                            :MDV=>"mean_doppler_velocity",
+                            :SPW=>"spectral_width",
+                            :LDR=>"linear_depolarization_ratio",
+                            :SNR=>"signal_to_noise_ratio_copolar_h",
+                            :radar_frequency => "frequency",  # Hz
+                            :DETECTIONMASK => "significant_detection_mask",
+                            )
+               )
+        
+        merge!(attrib, Dict(:location=>"location_description",
+                            :instrumentmodel=>"process_version",
+                            :doi => "doi"
+                            )
+               )
+        
     elseif isvariablein(input_file, "reflectivity_copol")
         # for KAZR GE or MD data file:
         #= NOTE: KAZR GE variable names and units, e.g. for frequency depends on type of product datastream:
@@ -134,7 +153,7 @@ function getKAZRData(input_file::String; addvars=[], onlyvars=[], attrvars=[],
     # =========================================================
     # filtering low reflectivity values if snr_filter is TRUE:
     if !isnothing(snr_filter) && haskey(output, :SNR)
-        !(0 < snr_filter < 100) && @error("snr_filter optional value out of range: ")
+        !(0 < snr_filter < 100) && @error("snr_filter optional value out of range! It muss be 0 to 100 percent.")
         filter_by_snr_threshold(output, snr_lim=snr_filter) 
     end
     
@@ -341,12 +360,13 @@ julia> filter_by_snr_threshold(radar)
 Note that radar::Dict should already include the symbol :SNR containing the
 matrix with signal-to-noise-ratio to use for the filtering.
 
-To filter only one radar variable e.g. Ze use:
+The function filters all 2D variables. To skip filtering some variable e.g. LDR use:
 ```julia-repl
-julia> filter_by_snr_threshold(radar, vars=(:Ze,))
+julia> filter_by_snr_threshold(radar, skipvars=(:LDR,))
 ```
+in case the optional argument ```skipvars``` is not indicated, then the function only skip :SNR by default.
 """
-function filter_by_snr_threshold(data::Dict; snr_lim=20, vars=())
+function filter_by_snr_threshold(data::Dict; snr_lim=20, skipvars=(:SNR, :DETECTIONMASK))
         
     bot_val = nothing
     snr_dims = ()
@@ -360,8 +380,8 @@ function filter_by_snr_threshold(data::Dict; snr_lim=20, vars=())
     end
     
     for (k,V) ∈ data
-        k == :SNR && continue
-        !isempty(vars) && all(k .!= vars) && continue
+        issubset([k], skipvars) && continue
+        
         !(typeof(V) <: Array) && continue
         (size(V) != snr_dims) && continue
         data[k][bot_val] .= NaN

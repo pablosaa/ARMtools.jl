@@ -100,8 +100,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
                 vartype <: AbstractFloat ? vartype(NaN) : tmp_fill
             end
         
-            #tmp_var = let
-            var_load=tmp_var[:]
+            var_load = Array(tmp_var)
             try
                 if typeof(var_load)<:Array
                     NCDatasets.nomissing(var_load, vartype<:DateTime || fill_val)
@@ -126,6 +125,18 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
                 tmp_var = NaN32
             end
         end
+
+        #= Checking if `radar_frequency` is present as a variable.
+        if is a variable then radar is MWACR or KAZR CORGE which has the
+        radar frequency in Hz and need to be converted to GHz:
+        =#
+        if key_var == :radar_frequency
+            if tmp_var[1] > 1f9
+                tmp_var[1] *= 1f-9
+            else
+                @warn "radar_frequency not global attribute? and not in GHz? "
+            end
+        end
         
         # filling the output variable:
         output[key_var] = tmp_var
@@ -145,7 +156,7 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
                 end
             end
         end
-            
+        str_var == "location_description" && (tmp_out=join(tmp_out))
           
         output[var] = length(tmp_out)>1 ? tmp_out : tmp_out[1]
     end
