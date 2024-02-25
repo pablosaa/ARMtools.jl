@@ -13,10 +13,10 @@ julia> mwr = getMWRData(mwr_file; addvars=["alt", "lon", "lat"])
 julia> mwr = getMWRData(mwr_file; onlyvars=["tbsky23"], attrvars=["doi"])
 ```
 WHERE:
-* mwr\\_file::String full path to file name to read,
-* addvars::Vector{String} list of additional NetCDF variables to read,
-* onlyvars::Vector{String} read only the listed variables,
-* attrvars::Vector{String} additionally read the listed attributes.
+* ```mwr_file::String``` or ```::Vector{String}``` full path to file name to read,
+* ```addvars::Vector{String}``` list of additional NetCDF variables to read,
+* ```onlyvars::Vector{String}``` read only the listed variables,
+* ```attrvars::Vector{String}``` additionally read the listed attributes.
 
 The default data fields are:
 * :time
@@ -67,10 +67,12 @@ function getMWRData(in_file::String; addvars=[], onlyvars=[], attrvars=[], extra
         factor_lwp = 1f4;
         factor_iwv = 997f-2;  # [cm] -> [kg m⁻²]
 
+        ncvars[:SFT] = "tkair"   # [K]
+        ncvars[:wet] = "wet_window"
         attvars = Dict(
             :elevation => "elevation",
             :azimuth => "azimuth",
-            :wet => "wet_window"
+            #:wet => "wet_window"
         )
     else
         @warn "None know LWP variables found in $in_file"
@@ -102,6 +104,32 @@ function getMWRData(in_file::String; addvars=[], onlyvars=[], attrvars=[], extra
     end
     
     return output
+end
+# ----/
+function getMWRData(in_file::Vector{String}; addvars=[], onlyvars=[], attrvars=[])
+    dat_out = Dict{Symbol, Any}()
+    catvar = Dict{Symbol, Union{Nothing, Int}}()
+    ntime = -1
+
+    getdim(x,n) = findall(==(n), size(x))
+    
+    foreach(in_file) do fn
+        # reading single file:
+        data = getMWRData(fn, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
+
+        if isempty(dat_out)
+            dat_out = data
+            catvar = let ntime = length(data[:time])
+                tmp = [k=>getdim(v, ntime) for (k,v) ∈ data if typeof(v)<:Array]
+                filter(p->!isnothing(p.second), tmp) |> Dict
+            end
+        else
+            # merging every variable following time dimension v
+            [dat_out[k] = cat(dat_out[k], data[k]; dims=v) for (k,v) ∈ catvar if !isempty(v)]
+        end
+    end
+    return dat_out
+
 end
 # ----/
 
