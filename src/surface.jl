@@ -45,14 +45,24 @@ end
 # Function to read RADFLUX data
 """
 Function to read the data files for RADFLUX database
-
-julia> read_radflux(input_file::String)
-
+USAGE:
+```julia-repl
+julia> flx = read_radflux(input_file::String)
+```
 or, for a set of input files input as Vector{String}
+```julia-repl
+julia> flx = read_radflux(input_file::Vector{String})
+julia> flx = read_radflux(base_path::String, dateofyear::Date)
+```
 
-julia> read_radflux(input_file::Vector{String})
+Output is a Dictionary with standard varibles.
 
-Output is a Dictionary with all default variables:
+NOTE: The ARM rad flux data comes in daily files starting from 10:00UTC at the given
+filename, and ending at 9:59UTC at the next day. Sometimes it is needed the data only
+for a given Date, in that case use the input argument as:
+```read_radflux("/data/nsa/", Date(year, month, day))```
+which will output the data corresponding to the given day from 00:00UTC to 23:59UTC
+found at the path "/data/nsa/yyyy/".
 """
 function read_radflux(input_file::String; addvars=[], onlyvars=[], attrvars=[])
     # defaul netCDF variables to read from:
@@ -115,6 +125,17 @@ function read_radflux(input_file::Vector{String}; addvars=[], onlyvars=[], attrv
             # merging every variable following time dimension v
             [rad_out[k] = cat(rad_out[k], rad[k]; dims=v) for (k,v) ∈ catvar if !isempty(v)]
         end
+    end
+    return rad_out
+end
+function read_radflux(path_name, thedate::Date; addvars=[], onlyvars=[], attrvars=[])
+    DTs = [thedate - Day(1), thedate]
+    thefiles = [ARMtools.getFilePattern(path_name,"", year(dt), month(dt), day(dt)) for dt ∈ DTs]
+        
+    rad_out = let rad=read_radflux(thefiles, addvars=addvars, onlyvars=onlyvars, attrvars=attrvars)
+        idx = findall(==(thedate), Date.(rad[:time]))
+        isempty(idx) && @warn("No data matched the $(thedate)")
+        Dict(k=>typeof(v)<:Array && size(v,1)==length(rad[:time]) ? v[idx] : v for (k,v) ∈ rad)        
     end
     return rad_out
 end
