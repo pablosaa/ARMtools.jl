@@ -62,7 +62,22 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     output = Dict()
     @assert isfile(ncfile) "reading $ncfile but not found!"
     ncin = NCDataset(ncfile)
-    for (key_var, str_var) ∈ ncvars
+    for (key_var, list_var) ∈ ncvars
+
+        # If list_var is a Tuple, find the first available in netCDF file.
+        str_var = let type_var=typeof(list_var)
+            if type_var <: Tuple
+                idx_var = findfirst(x->haskey(ncin, x), list_var)
+                isnothing(idx_var) ? missing : list_var[idx_var]
+            elseif type_var <: String && haskey(ncin, list_var)
+                list_var
+            else
+                @warn("Variable $(var) contains invalid assigned $(list_var). Skipped!")
+                missing
+            end
+        end
+
+        ismissing(str_var) && continue
         
         # checking for scaling attributes to change the variable values:
         scale_factor = missing
@@ -143,8 +158,20 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
     end
     
     # for global attributes:
-    for (var, str_var) ∈ attrvars
-        !haskey(ncin.attrib, str_var) && continue
+    for (var, list_var) ∈ attrvars
+        str_var = let type_var=typeof(list_var)
+            if type_var <: Tuple
+                idx_var = findfirst(x->haskey(ncin.attrib, x), list_var)
+                isnothing(idx_var) ? missing : list_var[idx_var]
+            elseif type_var <: String && haskey(ncin.attrib, list_var)
+                list_var
+            else
+                @warn("Attribute $(var) contains invalid assigned $(list_var). Skipped!")
+                missing
+            end
+        end
+
+        ismissing(str_var) && continue
         local tmp_out = ncin.attrib[str_var] #|> split
 
         

@@ -34,7 +34,7 @@ function getGNDIRTdata(in_file::String; addvars=[], onlyvars=[], attrvars=[])
         ncvars[:IRT] = "sfc_ir_temp"
         ncvars[:σIRT] = "sfc_ir_temp_std"
     else
-        @warn "$irt_file seems not to be a IRT file"
+        @warn "$(in_file) seems not to be a IRT file"
         return nothing
     end
 
