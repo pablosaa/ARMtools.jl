@@ -67,36 +67,22 @@ function retrieveVariables(ncfile::String, ncvars; attrvars=[])
         # If list_var is a Tuple, find the first available in netCDF file.
         str_var = let type_var=typeof(list_var)
             if type_var <: Tuple
-                idx_var = findfirst(x->haskey(ncin, x), list_var)
+                idx_var = findfirst(x-> haskey(ncin, x) && !all(ismissing.(ncin[x])), list_var)
+                @info("For assignment $(key_var) using the netCDF variable: $(list_var[idx_var]) out of $(list_var).")
                 isnothing(idx_var) ? missing : list_var[idx_var]
             elseif type_var <: String && haskey(ncin, list_var)
                 list_var
             else
-                @warn("Variable $(var) contains invalid assigned $(list_var). Skipped!")
+                @warn("Variable $(key_var) contains invalid assigned $(list_var). Skipped!")
                 missing
             end
         end
 
-        ismissing(str_var) && continue
+        if ismissing(str_var)
+            @warn("Variable $(key_var) either not found in netCDF or if found has all values 'missing'.")
+            continue
+        end
         
-        # checking for scaling attributes to change the variable values:
-        scale_factor = missing
-        if haskey(ncin[str_var].attrib, "scale_factor")
-            scale_factor = ncin[str_var].attrib["scale_factor"]
-        end
-
-        add_offset = missing
-        if haskey(ncin[str_var].attrib, "add_offset")
-            add_offset = ncin[str_var].attrib["add_offset"]
-        end
-
-        # checking whether or not the variable is logarithmic:
-        isvarlog = false
-        if haskey(ncin[str_var].attrib, "units")
-            unit_str = ncin[str_var].attrib["units"] |> lowercase
-            isvarlog = map(x->contains(unit_str,x),
-                           ("log", "logarithm", "log10", "dbz", "dbm","db")) |> any
-        end
 
         # *******************************
         # reading variable:

@@ -24,14 +24,14 @@ The default data fields are:
 * :IWV
 
 Alternative variables can be:
-* lat => North latitude,
-* lon => East longitude,
-* alt => altitude above mean sea level (instrument level),
-* surface\\_vapor\\_pres =>  Intrument level vapor pressure,
-* surface\\_pres =>  Instrument level pressure,
-* surface\\_rh => Instrument level relative humidity,
-* tbsky23 => Brightness Temperature at 23GHz [K],
-* tbsky31 => Brightness Temperature at 31GHz [K],
+* ```lat``` => North latitude,
+* ```lon``` => East longitude,
+* ```alt``` => altitude above mean sea level (instrument level),
+* ```surface_vapor_pres``` =>  Intrument level vapor pressure,
+* ```surface_pres``` =>  Instrument level pressure,
+* ```surface_rh``` => Instrument level relative humidity,
+* ```tbsky23``` => Brightness Temperature at 23GHz [K],
+* ```tbsky31``` => Brightness Temperature at 31GHz [K],
 
 Example of attributes:
 * side_id
@@ -45,14 +45,14 @@ SUPPORTED PRODUCTS:
 function getMWRData(in_file::String; addvars=[], onlyvars=[], attrvars=[], extras...)
 
 
-    ncvars = Dict(:time=>"time",
-                  :lat=>"lat",
-                  :lon=>"lon",
-                  :alt=>"alt")
+    ncvars = Dict{Symbol, Any}(:time=>"time",
+                               :lat=>"lat",
+                               :lon=>"lon",
+                               :alt=>"alt")
 
-    if isvariablein(in_file, "be_lwp")
-        ncvars[:LWP] = "be_lwp";  # [g/m²]
-        ncvars[:IWV] = "be_pwv";  # [cm]
+    if isvariablein(in_file, "orig_lwp") || isvariablein(in_file, "phys_lwp")
+        ncvars[:LWP] = ("be_lwp", "phys_lwp", "orig_lwp");  # [g/m²]
+        ncvars[:IWV] = ("be_pwv", "phys_pwv", "orig_pwv");  # [cm]
         
         factor_lwp = 1f0;
         factor_iwv = 997f-2;  # [cm] -> [kg m⁻²]
